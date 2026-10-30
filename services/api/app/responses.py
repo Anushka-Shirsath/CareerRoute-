@@ -88,6 +88,9 @@ class OfferingFacts(Output):
     source_id: str | None
     is_synthetic: bool
     verified_fields: dict[str, Fact]
+    published_fee: dict[str, Any] | None = None
+    historical_hostel: dict[str, Any] | None = None
+    possible_cutoffs: list[dict[str, Any]] = []
 
 
 class CutoffComparison(Output):

@@ -178,29 +178,27 @@ export function MarksPage({ review = false }: { review?: boolean }) {
     });
   const extract = () =>
     task.run(async () => {
-      if (!file) throw new Error("Choose a synthetic text PDF first.");
-      if (
-        file.type !== "application/pdf" &&
-        !file.name.toLowerCase().endsWith(".pdf")
-      )
-        throw new Error("Choose a PDF file.");
+      if (!file) throw new Error("Choose a sample PDF or image first.");
+      const extension = file.name.toLowerCase();
+      const mime = file.type === "application/pdf" || extension.endsWith(".pdf") ? "application/pdf" : file.type === "image/png" || extension.endsWith(".png") ? "image/png" : file.type === "image/jpeg" || /\.jpe?g$/.test(extension) ? "image/jpeg" : "";
+      if (!mime) throw new Error("Choose a PDF, PNG, or JPEG file.");
       if (file.size > 5 * 1024 * 1024)
-        throw new Error("Choose a PDF smaller than 5 MiB.");
+        throw new Error("Choose a file smaller than 5 MiB.");
       const signed = await write<{ upload_url: string; document_id: string }>(
         "/results/upload-url",
-        { mime: "application/pdf", size: file.size },
+        { mime, size: file.size },
       );
       const url = new URL(signed.upload_url, window.location.origin);
       const upload = await fetch(url.pathname + url.search, {
         method: "PUT",
         body: file,
-        headers: { "Content-Type": "application/pdf" },
+        headers: { "Content-Type": mime },
         credentials: "include",
       });
       if (!upload.ok) {
         const body = await upload.json();
         throw new Error(
-          body?.error?.message || "The PDF could not be uploaded.",
+          body?.error?.message || "The file could not be uploaded.",
         );
       }
       const draft = await write<Result>("/results/extract", {
@@ -256,7 +254,7 @@ export function MarksPage({ review = false }: { review?: boolean }) {
                 className={mode === "pdf" ? "selected" : ""}
                 onClick={() => setMode("pdf")}
               >
-                Upload a PDF
+                Upload a file
               </button>
             </div>
           )}
@@ -296,18 +294,18 @@ export function MarksPage({ review = false }: { review?: boolean }) {
               <div className="upload-zone">
                 <Icon name="upload" size={28} />
                 <p>
-                  Use a synthetic text or scanned PDF with subject rows such as
+                  Use a synthetic PDF or image with subject rows such as
                   “Mathematics 84/100”, or a table labelled Subject, Maximum
                   and Obtained. Scans are read locally and can contain errors;
                   check all marks and add any missing subjects manually.
                 </p>
                 <Field
-                  label="Sample PDF"
-                  hint="Up to 5 MiB and 3 pages. Do not upload a real marksheet."
+                  label="Sample marksheet file"
+                  hint="PDF, PNG or JPEG up to 5 MiB; PDFs may have up to 3 pages. Do not upload a real marksheet."
                 >
                   <input
                     type="file"
-                    accept="application/pdf,.pdf"
+                    accept="application/pdf,image/png,image/jpeg,.pdf,.png,.jpg,.jpeg"
                     onChange={(e) => setFile(e.target.files?.[0] || null)}
                   />
                 </Field>
@@ -320,11 +318,10 @@ export function MarksPage({ review = false }: { review?: boolean }) {
             </div>
           ) : (
             <>
-              <div className="table-wrap section-gap">
+              <p className="panel-note section-gap">As shown on the sample marksheet. Blank values stay unknown. Scroll across to check every column.</p>
+              <div className="table-wrap" tabIndex={0} role="region" aria-label="Subject marks, scroll horizontally for all columns">
                 <table className="subject-table">
-                  <caption>
-                    As shown on the sample marksheet. Blank values stay unknown.
-                  </caption>
+                  <caption className="sr-only">Subject marks</caption>
                   <thead>
                     <tr>
                       <th scope="col">Subject name</th>
@@ -482,7 +479,7 @@ export function MarksPage({ review = false }: { review?: boolean }) {
             <div className="readiness-row">
               <strong>Check, then confirm</strong>
               <p>
-                PDF extraction creates a draft. It never confirms or corrects
+                File extraction creates a draft. It never confirms or corrects
                 itself.
               </p>
             </div>
@@ -502,7 +499,7 @@ export function MarksPage({ review = false }: { review?: boolean }) {
           </Panel>
           <Notice icon="shield">
             This is an assignment demo. Please use synthetic results and sample
-            PDFs, not personal marksheets.
+            files, not personal marksheets.
           </Notice>
         </div>
       </div>

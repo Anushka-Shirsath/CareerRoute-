@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { api, write, numberOrNull } from "../api";
 import { useData, useTask, useWorkspace } from "../context";
 import { costLabels, fmt, money, pretty, statusLabels } from "../content";
@@ -21,133 +22,65 @@ import {
 import type { Assumptions, Cost, Offering, Shortlist } from "../types";
 
 function SavedOffering({ item }: { item: Shortlist }) {
-  const ws = useWorkspace(),
-    task = useTask();
-  const [status, setStatus] = useState(item.status),
-    [note, setNote] = useState(item.note || "");
-  useEffect(() => {
-    setStatus(item.status);
-    setNote(item.note || "");
-  }, [item.status, item.note]);
-  if (!item.facts)
-    return (
-      <Panel>
-        <p>This saved offering is no longer published.</p>
-        <Button
-          variant="text"
-          onClick={() =>
-            task.run(async () => {
-              await write(
-                "/me/shortlist/" + encodeURIComponent(item.offering_id),
-                undefined,
-                "DELETE",
-              );
-              await ws.refresh();
-            })
-          }
-        >
-          Remove from shortlist
-        </Button>
-      </Panel>
-    );
-  return (
-    <section className="saved-offering">
-      <CollegeRow offering={item.facts} />
-      <div className="saved-controls">
-        <Field label="My progress">
-          <select value={status} onChange={(e) => setStatus(e.target.value)}>
-            {Object.entries(statusLabels).map(([key, label]) => (
-              <option key={key} value={key}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="A private note">
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            maxLength={1000}
-            placeholder="Something you want to ask or remember"
-            rows={1}
-          />
-        </Field>
-        <Button
-          variant="secondary"
-          busy={task.busy}
-          disabled={status === item.status && note === (item.note || "")}
-          onClick={() =>
-            task.run(async () => {
-              await write(
-                "/me/shortlist/" + encodeURIComponent(item.offering_id),
-                { status, note: note || null },
-                "PUT",
-              );
-              await ws.refresh();
-              ws.notify("Your shortlist progress is saved.");
-            })
-          }
-        >
-          Save progress
-        </Button>
+  const ws = useWorkspace(), task = useTask();
+  const [status, setStatus] = useState(item.status), [note, setNote] = useState(item.note || "");
+  const [removing, setRemoving] = useState(false);
+  useEffect(() => { setStatus(item.status); setNote(item.note || ""); }, [item.status, item.note]);
+  const dirty = status !== item.status || note !== (item.note || "");
+  const course = item.facts;
+  const selected = ws.compareIds.includes(item.offering_id);
+  const remove = () => task.run(async () => {
+    await write("/me/shortlist/" + encodeURIComponent(item.offering_id), undefined, "DELETE");
+    if (selected) ws.toggleCompare(item.offering_id);
+    await ws.refresh(); ws.notify("Course removed from your shortlist.");
+  });
+  return <article className={`shortlist-course ${selected ? "shortlist-course-selected" : ""}`}>
+    <header className="shortlist-course-heading">
+      <div><h2>{course ? <Link href={"/colleges/" + encodeURIComponent(item.offering_id)}>{course.name}</Link> : "This saved course is no longer published"}</h2>
+        {course && <p>{course.program_name}</p>}
       </div>
-      {status.endsWith("_reported") && (
-        <p className="panel-note">
-          This is a status you reported. CareerQuest does not confirm official
-          admission or allotment.
-        </p>
-      )}
-      {task.error && <ErrorState message={task.error} />}
-    </section>
-  );
+      {course && <label className="shortlist-compare-check"><input type="checkbox" checked={selected} disabled={!selected && ws.compareIds.length >= 3} onChange={() => ws.toggleCompare(item.offering_id)} aria-label={`Compare ${course.name}, ${course.program_name}, ${course.academic_year || "year unknown"}`}/><span>Compare</span></label>}
+    </header>
+    {course ? <>
+      <div className="shortlist-course-meta"><span><Icon name="pin" size={14}/>{course.district || "District not provided"}</span><span>{course.medium || "Medium not verified"}</span><span>{course.academic_year || "Year not provided"}</span></div>
+      <dl className="shortlist-course-facts"><div><dt>Tuition / year</dt><dd>{money(course.tuition)}</dd></div><div><dt>Hostel</dt><dd>{course.hostel_status === "available" ? "Available" : course.hostel_status === "not_available" ? "Not available" : "Not verified"}</dd></div><div><dt>Your progress</dt><dd>{statusLabels[item.status] || pretty(item.status)}</dd></div></dl>
+      <details className="shortlist-notes">
+        <summary><span>Your notes & progress{item.note && <small>Private note saved</small>}</span><span className="shortlist-note-action">{dirty ? "Unsaved changes" : "Edit"}</span></summary>
+        <form onSubmit={e => { e.preventDefault(); task.run(async () => { await write("/me/shortlist/" + encodeURIComponent(item.offering_id), {status, note:note || null}, "PUT"); await ws.refresh(); ws.notify("Your notes and progress are saved."); }); }}>
+          <div className="shortlist-edit-grid"><Field label="My progress"><select aria-label={`Progress for ${course.name}`} value={status} onChange={e => setStatus(e.target.value)}>{Object.entries(statusLabels).map(([key,label]) => <option key={key} value={key}>{label}</option>)}</select></Field>
+          <Field label="My private note" hint="Only you can see this note. It is excluded from parent reports."><textarea aria-label={`Private note for ${course.name}`} value={note} onChange={e => setNote(e.target.value)} maxLength={1000} placeholder="Questions to ask, things to check, reasons this course interests you…" rows={3}/></Field></div>
+          <div className="shortlist-note-save"><Button type="submit" busy={task.busy} disabled={!dirty}>Save notes & progress</Button><span aria-live="polite">{dirty ? "You have unsaved changes" : "All changes saved"} · {note.length}/1,000 characters</span></div>
+          {status.endsWith("_reported") && <p className="shortlist-reported">This progress is self-reported. It does not confirm official admission or allotment.</p>}
+        </form>
+      </details>
+    </> : <div className="shortlist-unavailable"><p>Its published details are unavailable. You can keep the saved entry or remove it below.</p>{item.note && <div><strong>Your private note</strong><p>{item.note}</p></div>}</div>}
+    <footer className="shortlist-course-footer">{course && <Link href={"/colleges/" + encodeURIComponent(item.offering_id)}>View course details <Icon name="up" size={15}/></Link>}<button onClick={() => setRemoving(!removing)} aria-expanded={removing} aria-controls={`remove-${item.id}`}>Remove from shortlist</button></footer>
+    {removing && <div className="shortlist-remove-confirm" id={`remove-${item.id}`}><p>Remove this saved course? Its saved note and progress will also be removed.</p><div><Button variant="danger" busy={task.busy} onClick={remove}>Remove course</Button><Button variant="text" disabled={task.busy} onClick={() => setRemoving(false)}>Keep course</Button></div></div>}
+    {task.error && <ErrorState message={task.error}/>}
+  </article>;
 }
 export function ShortlistPage() {
-  const ws = useWorkspace();
-  const items = ws.dashboard!.shortlist;
-  return (
-    <>
-      <PageHeader
-        title="Keep your options together"
-        description="A shortlist is a place to explore, compare and ask better questions. Saving a program is not an application."
-        action={
-          <ActionLink
-            href="/compare"
-            variant={items.length > 1 ? "primary" : "secondary"}
-            icon="scale"
-          >
-            Compare costs
-          </ActionLink>
-        }
-      />
-      {items.length ? (
-        <>
-          <div className="list-intro">
-            <strong>
-              {fmt(items.length)} saved offering{items.length === 1 ? "" : "s"}
-            </strong>
-            <span>Your notes stay private, including in parent reports.</span>
-          </div>
-          {items.map((item) => (
-            <SavedOffering key={item.id} item={item} />
-          ))}
-        </>
-      ) : (
-        <Panel>
-          <Empty
-            title="Your shortlist is open"
-            action={
-              <ActionLink href="/colleges" variant="primary">
-                Find your first possibility
-              </ActionLink>
-            }
-          >
-            Save a real program from the directory. You can compare costs and
-            track the preparation you report here.
-          </Empty>
-        </Panel>
-      )}
-    </>
-  );
+  const ws = useWorkspace(), items = ws.dashboard!.shortlist;
+  const [search, setSearch] = useState(""), [progress, setProgress] = useState("");
+  const visible = items.filter(item => {
+    const matches = !search.trim() || [item.facts?.name, item.facts?.program_name, item.facts?.district].some(value => value?.toLowerCase().includes(search.trim().toLowerCase()));
+    return matches && (!progress || item.status === progress);
+  });
+  return <div className="shortlist-page">
+    <header className="shortlist-heading"><div><h1>Your options, together.</h1><p>A space to compare courses, keep questions, and plan your next move.</p></div><Link href="/colleges">Explore more courses <Icon name="up" size={16}/></Link></header>
+    {items.length ? <>
+      <section className="shortlist-desk" aria-label="Manage your shortlist">
+        <div className="shortlist-desk-intro"><div><strong>{fmt(items.length)} saved {items.length === 1 ? "course" : "courses"}</strong><p>Select two or three courses from the same academic year to compare costs.</p></div>
+          {ws.compareIds.length >= 2 ? <Link className="button primary" href="/compare">Compare selected ({ws.compareIds.length})</Link> : <span className="shortlist-selection-hint" role="status">{ws.compareIds.length ? "1 selected. Choose one more." : "Select courses using the checkboxes."}</span>}
+        </div>
+        {ws.compareIds.length > 0 && <div className="shortlist-selection-summary"><span>{ws.compareIds.length} of 3 selected. Selection is shared with college search.</span><button onClick={() => ws.compareIds.forEach(id => ws.toggleCompare(id))}>Clear selection</button></div>}
+        <div className="shortlist-filters"><label className="shortlist-search"><Icon name="search" size={19}/><input type="search" aria-label="Search saved courses" placeholder="Find a saved college, course or district" value={search} onChange={e => setSearch(e.target.value)}/></label><label className="shortlist-progress-filter">Progress<select aria-label="Filter saved courses by progress" value={progress} onChange={e => setProgress(e.target.value)}><option value="">All progress</option>{Object.entries(statusLabels).map(([key,label]) => <option key={key} value={key}>{label}</option>)}</select></label></div>
+      </section>
+      <div className="shortlist-list-intro"><span role="status" aria-live="polite">{search || progress ? `${visible.length} of ${items.length} saved courses` : "Your saved courses"}</span><span>Saving a course is not an application.</span></div>
+      <div className="shortlist-course-list" hidden={!visible.length}>{items.map(item => <div key={item.id} hidden={!visible.some(match => match.id === item.id)}><SavedOffering item={item}/></div>)}</div>{!visible.length && <div className="shortlist-empty"><Icon name="search" size={28}/><h2>No saved courses match.</h2><p>Try another name or clear your progress filter. Your saved courses are still here.</p><Button onClick={() => {setSearch("");setProgress("");}}>Show all saved courses</Button></div>}
+      <p className="shortlist-privacy">Your notes are private and excluded from parent reports. Unverified fees and hostel details need confirmation with the college.</p>
+    </> : <section className="shortlist-empty shortlist-first-course"><Icon name="bookmark" size={32}/><h2>Make room for possibilities.</h2><p>When a course catches your eye, save it from the directory. It will be here when you’re ready to compare costs or keep a private note.</p><Link href="/colleges" className="button primary">Find a course to save</Link><span>No application or commitment. Just your options.</span></section>}
+  </div>;
 }
 
 const assumptionFields: [keyof Assumptions, string, string][] = [

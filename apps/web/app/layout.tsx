@@ -4,6 +4,9 @@ import "./astryx-inspired.css";
 import "./bright-dashboard.css";
 import "./mentor-widget.css";
 import "./festival-game.css";
+import "./college-search.css";
+import "./college-details.css";
+import "./shortlist.css";
 import { WorkspaceProvider } from "../src/context";
 
 export const metadata: Metadata = {

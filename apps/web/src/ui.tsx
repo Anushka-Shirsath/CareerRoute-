@@ -520,8 +520,8 @@ export function CollegeRow({
         {!compact && (
           <div className="college-facts">
             <span>
-              <span className="muted">Tuition / year</span>
-              <strong>{money(offering.tuition)}</strong>
+              <span className="muted">{offering.published_fee ? `Published annual fee · ${offering.published_fee.academic_year}` : "Tuition / year"}</span>
+              <strong>{money(offering.published_fee?.amount ?? offering.tuition)}</strong>
             </span>
             <span>
               <span className="muted">Hostel</span>

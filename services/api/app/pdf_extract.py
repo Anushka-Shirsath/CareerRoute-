@@ -4,13 +4,41 @@ import json
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 import pdfplumber
+from PIL import Image, ImageOps, UnidentifiedImageError
 from .errors import Problem
 from .schemas import Subject
 
 SUBJECTS = {'english': 'english', 'marathi': 'first_language', 'hindi': 'second_language', 'sanskrit': 'third_language', 'mathematics': 'mathematics', 'maths': 'mathematics', 'algebra': 'mathematics', 'geometry': 'mathematics', 'science': 'science', 'science and technology': 'science', 'science and technology part 1': 'science', 'science and technology part 2': 'science', 'social science': 'social_science', 'social sciences': 'social_science', 'history': 'social_science', 'geography': 'social_science', 'physics': 'science', 'chemistry': 'science', 'biology': 'science'}
 SUBJECTS['science & technology'] = 'science'
+
+
+def document_as_pdf(content, mime):
+    if mime == 'application/pdf':
+        return content
+    expected = {'image/png': 'PNG', 'image/jpeg': 'JPEG'}.get(mime)
+    if not expected:
+        raise Problem('UPLOAD_REJECTED', 'Use a PDF, PNG, or JPEG image.')
+    try:
+        with Image.open(io.BytesIO(content)) as image:
+            if image.format != expected or getattr(image, 'n_frames', 1) != 1 or image.width * image.height > 20_000_000:
+                raise ValueError('Invalid image format or dimensions')
+            image = ImageOps.exif_transpose(image)
+            image.load()
+            if image.mode in ('RGBA', 'LA') or 'transparency' in image.info:
+                rgba = image.convert('RGBA')
+                background = Image.new('RGB', rgba.size, 'white')
+                background.paste(rgba, mask=rgba.getchannel('A'))
+                image = background
+            else:
+                image = image.convert('RGB')
+            output = io.BytesIO()
+            image.save(output, format='PDF', resolution=120)
+            return output.getvalue()
+    except (UnidentifiedImageError, Image.DecompressionBombError, OSError, ValueError):
+        raise Problem('UPLOAD_REJECTED', 'The image could not be read. Use a clear PNG or JPEG under 20 megapixels.') from None
 
 
 def _subject(name, obtained, maximum):
@@ -81,9 +109,7 @@ def _ssc_scan_rows(text):
 
 
 def _scan_text(content):
-    """Use the Windows OCR engine locally; document images never leave this machine."""
-    if os.name != 'nt':
-        raise Problem('UPLOAD_REJECTED', 'Scanned PDF reading requires Windows OCR on this server. Please enter marks manually.')
+    """Run OCR locally; document images never leave the API server."""
     lines = []
     try:
         with pdfplumber.open(io.BytesIO(content)) as pdf:
@@ -95,6 +121,11 @@ def _scan_text(content):
                 image.thumbnail((3500, 3500))
                 buffer = io.BytesIO()
                 image.save(buffer, format='PNG')
+                if os.name != 'nt':
+                    command = ['swift', str(Path(__file__).with_name('macos_ocr.swift'))] if sys.platform == 'darwin' else ['tesseract', 'stdin', 'stdout', '-l', 'eng', '--psm', '6']
+                    result = subprocess.run(command, input=buffer.getvalue(), capture_output=True, timeout=60, check=True)
+                    lines.append(result.stdout.decode('utf-8'))
+                    continue
                 result = subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-File', str(Path(__file__).with_name('windows_ocr.ps1'))], input=base64.b64encode(buffer.getvalue()), capture_output=True, timeout=60, check=True)
                 words = json.loads(result.stdout.decode('utf-8-sig'))
                 rows = []
@@ -107,7 +138,7 @@ def _scan_text(content):
                     row['words'].append(word)
                 lines.extend(' '.join(w['text'] for w in sorted(row['words'], key=lambda w: w['x'])) for row in rows)
     except (OSError, subprocess.SubprocessError, UnicodeError, ValueError, KeyError, TypeError):
-        raise Problem('UPLOAD_REJECTED', 'Local scan reading failed. Check that Windows OCR English is installed, or enter marks manually.') from None
+        raise Problem('UPLOAD_REJECTED', 'Local scan reading failed. Check that the server has English OCR installed, or enter marks manually.') from None
     return '\n'.join(lines)
 
 

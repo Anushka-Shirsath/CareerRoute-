@@ -68,13 +68,14 @@ test('the whole Compass mission saves answers and returns a report', async ({pag
   await expect(page.locator('.dimension-row')).not.toHaveCount(0);
 });
 
-test('festival memory quest is playable and remains separate from career scoring', async ({page}) => {
+test('festival builder is playable and remains separate from career scoring', async ({page}) => {
   await page.goto('/compass/play');
-  await page.getByRole('button', { name: /Start the quest/ }).click();
-  await page.locator('.festival-cell:not(:disabled)').first().click();
-  await expect(page.locator('.festival-feedback')).toContainText('find its match');
-  await page.locator('.festival-cell:not(:disabled)').first().click();
-  await expect(page.locator('.festival-stats')).toContainText('1 move');
+  await page.getByRole('button', { name: /Let’s build a festival/ }).click();
+  await page.getByRole('button', { name: /^Build Mural wall/ }).click();
+  await page.getByRole('button', { name: /^Build Music stage/ }).click();
+  await expect(page.locator('.festival-feedback')).toContainText('Art club combo!');
+  await expect(page.getByTestId('festival-score')).toHaveText('22 / 30');
+  await expect(page.locator('.festival-footer')).toContainText('Game scores don’t affect your career suggestions');
   await page.getByRole('button', { name: /Continue to the career adventure/ }).click();
   await expect(page.locator('.game-context')).toBeVisible();
 });

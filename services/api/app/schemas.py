@@ -171,7 +171,7 @@ class ParentReportInput(Input):
 
 
 class UploadRequest(Input):
-    mime: Literal['application/pdf']
+    mime: Literal['application/pdf', 'image/png', 'image/jpeg']
     size: int = Field(ge=1, le=5 * 1024 * 1024)
 
 

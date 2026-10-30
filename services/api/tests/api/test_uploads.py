@@ -4,6 +4,8 @@ from app.errors import Problem
 import pytest
 import io
 import os
+import shutil
+import sys
 
 P = '/api/v1'
 
@@ -90,9 +92,62 @@ def test_scanned_pdf_is_read_with_local_windows_ocr(client):
     assert [(row['obtained'], row['maximum']) for row in result['subjects']] == [(84, 100), (70, 100)]
 
 
+@pytest.mark.skipif(os.name == 'nt' or (sys.platform != 'darwin' and not shutil.which('tesseract')), reason='Local OCR engine unavailable')
+def test_scanned_pdf_uses_local_ocr_on_non_windows(client):
+    from PIL import Image, ImageDraw, ImageFont
+    image = Image.new('RGB', (1800, 1000), 'white')
+    draw = ImageDraw.Draw(image)
+    font = ImageFont.truetype('/System/Library/Fonts/Supplemental/Arial.ttf' if os.path.exists('/System/Library/Fonts/Supplemental/Arial.ttf') else '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 65)
+    draw.text((100, 100), 'Subject          Maximum   Obtained', font=font, fill='black')
+    draw.text((100, 250), 'Mathematics      100       84', font=font, fill='black')
+    draw.text((100, 400), 'English          100       70', font=font, fill='black')
+    buffer = io.BytesIO()
+    image.save(buffer, format='PDF', resolution=120)
+    content = buffer.getvalue()
+    signed = client.post(P + '/results/upload-url', json={'mime': 'application/pdf', 'size': len(content)}).json()['data']
+    parts = urlparse(signed['upload_url'])
+    assert client.put(parts.path + '?' + parts.query, content=content).status_code == 200
+    response = client.post(P + '/results/extract', json={'document_id': signed['document_id'], 'board': 'SSC_MH', 'exam_year': 2026})
+    assert response.status_code == 200, response.text
+    result = response.json()['data']
+    assert result['confirmation_state'] == 'draft'
+    assert [(row['obtained'], row['maximum']) for row in result['subjects']] == [(84, 100), (70, 100)]
+    assert any('OCR can make mistakes' in warning for warning in result['warnings'])
+
+
+@pytest.mark.skipif(os.name == 'nt' or (sys.platform != 'darwin' and not shutil.which('tesseract')), reason='Local OCR engine unavailable')
+@pytest.mark.parametrize(('format_name', 'mime'), [('PNG', 'image/png'), ('JPEG', 'image/jpeg')])
+def test_image_marksheet_upload_extracts_draft(client, format_name, mime):
+    from PIL import Image, ImageDraw, ImageFont
+    image = Image.new('RGB', (1800, 1000), 'white')
+    font = ImageFont.truetype('/System/Library/Fonts/Supplemental/Arial.ttf' if os.path.exists('/System/Library/Fonts/Supplemental/Arial.ttf') else '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 65)
+    draw = ImageDraw.Draw(image)
+    draw.text((100, 100), 'Subject          Maximum   Obtained', font=font, fill='black')
+    draw.text((100, 250), 'Mathematics      100       84', font=font, fill='black')
+    buffer = io.BytesIO()
+    image.save(buffer, format=format_name)
+    content = buffer.getvalue()
+    signed = client.post(P + '/results/upload-url', json={'mime': mime, 'size': len(content)})
+    assert signed.status_code == 200, signed.text
+    data = signed.json()['data']
+    parts = urlparse(data['upload_url'])
+    assert client.put(parts.path + '?' + parts.query, content=content).status_code == 200
+    result = client.post(P + '/results/extract', json={'document_id': data['document_id'], 'board': 'SSC_MH', 'exam_year': 2026})
+    assert result.status_code == 200, result.text
+    assert result.json()['data']['subjects'][0]['obtained'] == 84
+    assert result.json()['data']['confirmation_state'] == 'draft'
+
+
 def test_upload_rejects_wrong_magic_bytes(client):
     content = b'<html>fake.pdf</html>'
     signed = client.post(P + '/results/upload-url', json={'mime': 'application/pdf', 'size': len(content)}).json()['data']
+    parts = urlparse(signed['upload_url'])
+    assert client.put(parts.path + '?' + parts.query, content=content).status_code == 422
+
+
+def test_image_upload_rejects_mismatched_file_type(client):
+    content = pdf_bytes(['Mathematics 84/100'])
+    signed = client.post(P + '/results/upload-url', json={'mime': 'image/png', 'size': len(content)}).json()['data']
     parts = urlparse(signed['upload_url'])
     assert client.put(parts.path + '?' + parts.query, content=content).status_code == 422
 

@@ -7,6 +7,7 @@ from .models import AdmissionCycle, Cutoff, Fee, ImportRun, Institution, Offerin
 from .errors import Problem
 from .domain.matching import ranked_search
 from .domain.costs import cost_split
+from . import local_catalogue
 
 DISTRICTS = ['Ahilyanagar', 'Akola', 'Amravati', 'Chhatrapati Sambhajinagar', 'Beed', 'Bhandara', 'Buldhana', 'Chandrapur', 'Dhule', 'Gadchiroli', 'Gondia', 'Hingoli', 'Jalgaon', 'Jalna', 'Kolhapur', 'Latur', 'Mumbai City', 'Mumbai Suburban', 'Nagpur', 'Nanded', 'Nandurbar', 'Nashik', 'Dharashiv', 'Palghar', 'Parbhani', 'Pune', 'Raigad', 'Ratnagiri', 'Sangli', 'Satara', 'Sindhudurg', 'Solapur', 'Thane', 'Wardha', 'Washim', 'Yavatmal']
 DISTRICT_ALIASES = {'ahmednagar': 'Ahilyanagar', 'aurangabad': 'Chhatrapati Sambhajinagar', 'osmanabad': 'Dharashiv', 'mumbai': 'Mumbai City', 'mumbai suburban': 'Mumbai Suburban', 'buldana': 'Buldhana', 'gondiya': 'Gondia', 'raigarh': 'Raigad'}
@@ -80,6 +81,7 @@ def get_offering(db, offering_id, include_cutoffs=True, category=None):
     fees = [f.data for f in db.scalars(select(Fee).where(Fee.offering_id == o.id))]
     records = cutoff_rows(db, [o.id]).get(o.id, []) if include_cutoffs else []
     facts = offering_facts(o, i, fees, records, len(records), category)
+    facts.update(local_catalogue.evidence(o.id, i.id, o.data.get('program_code'), include_cutoffs=include_cutoffs))
     facts['course_management_type'] = o.data.get('course_management_type')
     facts['approval_status'] = o.data.get('approval_status')
     facts['verified_fields']['course_management_type'] = fact(o.data.get('course_management_type'), o.data.get('source_id'), o.academic_year)

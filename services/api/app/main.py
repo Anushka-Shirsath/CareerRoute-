@@ -9,7 +9,7 @@ import re
 import secrets
 import time
 import uuid
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from urllib.parse import quote
 import httpx
 from fastapi import Depends, FastAPI, Query, Request, Response
@@ -20,7 +20,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.exc import SQLAlchemyError
 from pydantic import BaseModel, Field, field_validator
 from starlette.exceptions import HTTPException
-from . import catalogue, master_catalogue
+from . import catalogue, master_catalogue, local_catalogue
 from .ai.mentor import chat
 from .config import ROOT, Settings
 from .content import mission
@@ -29,7 +29,7 @@ from .domain.compass import current_node
 from .errors import Problem
 from .guides import guide
 from .models import AccountSession, DomainEvent, GuestSession, RateCounter, Record, Sensitive, Share, now, uid
-from .pdf_extract import extract_pdf
+from .pdf_extract import document_as_pdf, extract_pdf
 from .schemas import (
     ChecklistInput, CompassReportInput, ConfirmResult, CostCompare, ExtractRequest,
     GameEvent, GoalInput, ManualResult, MatchRequest, MentorInput, ParentReportInput,
@@ -55,6 +55,15 @@ class AccountCredentials(BaseModel):
         if not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+', value):
             raise ValueError('Enter a valid email address.')
         return value
+
+
+class CutoffRecommendationInput(BaseModel):
+    merit_percent: float = Field(ge=0, le=100, allow_inf_nan=False)
+    verified_by_student: Literal[True]
+    academic_year: str = Field(pattern=r'^20\d{2}-\d{2}$')
+    round: str = Field(min_length=1, max_length=80)
+    stage: str = Field(min_length=1, max_length=80)
+    seat_type: str = Field(min_length=1, max_length=80)
 
 
 def envelope(request, data, warnings=None):
@@ -420,8 +429,6 @@ def create_app(settings=None, engine=None):
             content.extend(chunk)
             if len(content) > min(5 * 1024 * 1024, settings.max_upload_bytes):
                 raise Problem('UPLOAD_REJECTED', 'PDF exceeds this deployment\'s upload limit.', 413)
-        if not content.startswith(b'%PDF-'):
-            raise Problem('UPLOAD_REJECTED', 'PDF magic bytes are invalid.')
         with transaction(engine) as db:
             role(db, 'cq_student', decoded['owner'])
             ws = Workspace(db, decoded['owner'])
@@ -431,7 +438,7 @@ def create_app(settings=None, engine=None):
             if len(content) != row.data['size']:
                 raise Problem('UPLOAD_REJECTED', 'Uploaded size does not match the signed request.')
             # Validate page count and parser safety before accepting storage.
-            extract_pdf(bytes(content), validate_only=True)
+            extract_pdf(document_as_pdf(bytes(content), row.data['mime']), validate_only=True)
             row.data = {**row.data, 'content': base64.b64encode(content).decode(), 'sha256': hashlib.sha256(content).hexdigest(), 'uploaded': True}
         return envelope(request, {'document_id': document_id, 'uploaded': True})
 
@@ -443,8 +450,8 @@ def create_app(settings=None, engine=None):
             return envelope(request, {'result_id': existing.id, **existing.data})
         if not row.data.get('content') or row.data['delete_after'] <= now():
             raise Problem('UPLOAD_REJECTED', 'Upload a PDF before extracting, or use manual entry.')
-        subjects, warnings = extract_pdf(base64.b64decode(row.data['content']))
-        data = student.create_result({'board': value.board, 'exam_year': value.exam_year, 'result_type': 'official', 'subjects': subjects}, 'pdf_text', value.document_id)
+        subjects, warnings = extract_pdf(document_as_pdf(base64.b64decode(row.data['content']), row.data['mime']))
+        data = student.create_result({'board': value.board, 'exam_year': value.exam_year, 'result_type': 'official', 'subjects': subjects}, 'pdf_text' if row.data['mime'] == 'application/pdf' else 'image_vision', value.document_id)
         row.data = {**row.data, 'content': None, 'result_id': data['result_id']}
         return envelope(request, {**data, 'warnings': warnings}, warnings)
 
@@ -475,7 +482,7 @@ def create_app(settings=None, engine=None):
         return envelope(request, {'report_id': row.id, **row.data} if row else None)
 
     @app.get(PREFIX + '/colleges', response_model=Envelope, tags=['Catalogue'])
-    def colleges(request: Request, db: PublicDB, district: str | None = Query(None, max_length=100), pathway: str | None = Query(None, max_length=40), management: str | None = Query(None, max_length=40), q: str | None = Query(None, max_length=100), academic_year: str | None = Query(None, pattern=r'^20\d{2}-\d{2}$'), limit: int = Query(20, ge=1, le=50), cursor: str | None = Query(None, max_length=100)):
+    def colleges(request: Request, db: PublicDB, district: str | None = Query(None, max_length=100), pathway: str | None = Query(None, max_length=40), management: str | None = Query(None, max_length=40), q: str | None = Query(None, max_length=100), academic_year: str | None = Query(None, pattern=r'^20\d{2}-\d{2}$'), max_annual_fee: int | None = Query(None, ge=0, le=100000000), limit: int = Query(20, ge=1, le=50), cursor: str | None = Query(None, max_length=100)):
         query = catalogue.public_query()
         search_score = None
         if district:
@@ -488,6 +495,15 @@ def create_app(settings=None, engine=None):
             query, search_score = catalogue.directory_search(query, q)
         if academic_year:
             query = query.where(catalogue.Offering.academic_year == academic_year)
+        if max_annual_fee is not None:
+            candidates = local_catalogue.fee_candidates(max_annual_fee)
+            valid = []
+            for start in range(0, len(candidates), 500):
+                ids = list(candidates)[start:start + 500]
+                for offering in db.scalars(select(catalogue.Offering).where(catalogue.Offering.id.in_(ids))):
+                    if candidates[offering.id] == (offering.institution_id, offering.data.get('program_code')):
+                        valid.append(offering.id)
+            query = query.where(catalogue.Offering.id.in_(valid))
         total = db.scalar(select(func.count()).select_from(query.subquery()))
         if cursor and search_score is not None:
             try:
@@ -505,7 +521,7 @@ def create_app(settings=None, engine=None):
         else:
             rows = list(db.execute(query.order_by(catalogue.Offering.id).limit(limit + 1)))
             next_cursor = rows[limit - 1][0].id if len(rows) > limit else None
-        return envelope(request, {'items': [catalogue.offering_facts(row[0], row[1]) for row in rows[:limit]], 'next_cursor': next_cursor, 'total': total})
+        return envelope(request, {'items': [{**catalogue.offering_facts(row[0], row[1]), **local_catalogue.evidence(row[0].id, row[1].id, row[0].data.get('program_code'))} for row in rows[:limit]], 'next_cursor': next_cursor, 'total': total, 'fee_filter_available': local_catalogue.available()})
 
     @app.get(PREFIX + '/catalogue/stats', response_model=Envelope, tags=['Catalogue'])
     def catalogue_stats(request: Request, db: PublicDB):
@@ -536,6 +552,31 @@ def create_app(settings=None, engine=None):
     def match(value: MatchRequest, request: Request, student: StudentDep):
         consume(student.db, student.ws.user_id, 'matches', 60, 'hour', 'CONFLICT')
         return envelope(request, student.match(value.preferences.model_dump() if value.preferences else None, value.admission_context.model_dump() if value.admission_context else None, value.limit, value.cursor))
+
+    @app.get(PREFIX + '/cutoff-options', response_model=Envelope, tags=['Matching'])
+    def cutoff_options(request: Request):
+        return envelope(request, {'available': local_catalogue.available(), 'options': local_catalogue.cutoff_options()})
+
+    @app.post(PREFIX + '/cutoff-recommendations', response_model=Envelope, tags=['Matching'])
+    def cutoff_recommendations(value: CutoffRecommendationInput, request: Request, student: StudentDep):
+        if not student.academic():
+            raise Problem('VALIDATION_FAILED', 'Confirm your marksheet result before comparing cutoffs.', 422)
+        consume(student.db, student.ws.user_id, 'matches', 60, 'hour', 'CONFLICT')
+        rows = local_catalogue.historical_candidates(value.academic_year, value.round, value.stage, value.seat_type, value.merit_percent)
+        if rows is None:
+            raise Problem('NOT_FOUND', 'Historical cutoff data is not available on this server.', 404)
+        candidates = {'dump:' + str(row['offering_id']): row for row in rows}
+        valid = []
+        ids = list(candidates)
+        for start in range(0, len(ids), 500):
+            query = catalogue.public_query().where(catalogue.Offering.id.in_(ids[start:start + 500]), catalogue.Offering.pathway_id == 'polytechnic_diploma')
+            for offering, institution in student.db.execute(query):
+                item = candidates[offering.id]
+                if institution.id != 'dump:' + str(item['institution_id']) or offering.data.get('program_code') != item['choice_code']:
+                    continue
+                valid.append({**item, 'offering_id': offering.id, 'name': institution.name, 'program_name': offering.data['program_name'], 'district': institution.district, 'difference': round(value.merit_percent - item['cutoff_percent'], 2)})
+        valid.sort(key=lambda row: (row['difference'], row['name'].casefold(), row['offering_id']))
+        return envelope(request, {'items': valid[:50], 'total': len(valid), 'merit_percent': value.merit_percent, 'notice': 'Historical code-matched records are unconfirmed; this is not an admission prediction.'})
 
     @app.post(PREFIX + '/costs/compare', response_model=Envelope, tags=['Costs'])
     def compare(value: CostCompare, request: Request, student: StudentDep):

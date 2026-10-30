@@ -1,0 +1,20 @@
+{
+  "run_id": "poly-v7:afd5fbcf7d5ac4ae2b889c92",
+  "archive_sha256": "afd5fbcf7d5ac4ae2b889c92009192d82161a19eedce029462196ecf337bd573",
+  "institutions_reconciled": 449,
+  "offerings_reconciled": 3918,
+  "changed_existing_facts": [],
+  "academic_year": "2026-27",
+  "source_url": "https://project26api.4pindia.com/platform_api_26/common/public/institutecourses?course_name=poly",
+  "year_evidence_url": "https://poly26.dtemaharashtra.gov.in/poly_26/assets/pdf/Diploma%20Admission%20Information%20Brochure%202026-27.pdf",
+  "known_gaps": [
+    "Polytechnic district values remain unavailable.",
+    "No institutional fees or hostel records supplied.",
+    "No public institute-level cutoffs supplied.",
+    "Course management type is not approval status."
+  ],
+  "review_origin": "user_supplied_reviewed_extract",
+  "note": "Existing published identities retained. Source metadata and course management type are recorded; no missing fact is inferred.",
+  "applied": true,
+  "published_at": "2026-10-29T08:19:04.746307+00:00"
+}

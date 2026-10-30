@@ -1,0 +1,26 @@
+name: Mentor live evaluation
+on:
+  workflow_dispatch:
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    env:
+      GROQ_API_KEY: '${{ secrets.GROQ_API_KEY }}'
+      DATABASE_URL: '${{ secrets.EVAL_DATABASE_URL }}'
+      SHARE_TOKEN_PEPPER: '${{ secrets.EVAL_SHARE_TOKEN_PEPPER }}'
+      ENVIRONMENT: production
+      COOKIE_SECURE: 'true'
+      PUBLIC_API_ORIGIN: https://mentor-eval.invalid
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: |
+          test -n "$GROQ_API_KEY" || { echo 'Configure the GROQ_API_KEY secret.'; exit 1; }
+          test -n "$DATABASE_URL" || { echo 'Configure EVAL_DATABASE_URL for the seeded database using the restricted API role.'; exit 1; }
+          test -n "$SHARE_TOKEN_PEPPER" || { echo 'Configure EVAL_SHARE_TOKEN_PEPPER.'; exit 1; }
+      - run: pip install -r services/api/requirements.lock.txt
+      - run: python scripts/evaluate_mentor.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: mentor-evaluation, path: docs/evidence/mentor_live_eval.json}

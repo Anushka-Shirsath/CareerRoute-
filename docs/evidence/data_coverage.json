@@ -1,0 +1,709 @@
+{
+  "districts": [
+    {
+      "district": "Ahilyanagar",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 129,
+      "fyjc_colleges": 458,
+      "fyjc_offerings": 1859,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2026-27",
+        "2025-26"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Akola",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 16,
+      "fyjc_colleges": 277,
+      "fyjc_offerings": 923,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Amravati",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 52,
+      "fyjc_colleges": 316,
+      "fyjc_offerings": 1074,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Chhatrapati Sambhajinagar",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 29,
+      "fyjc_colleges": 519,
+      "fyjc_offerings": 2275,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Beed",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 26,
+      "fyjc_colleges": 308,
+      "fyjc_offerings": 1248,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Bhandara",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 45,
+      "fyjc_colleges": 156,
+      "fyjc_offerings": 505,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Buldhana",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 34,
+      "fyjc_colleges": 365,
+      "fyjc_offerings": 1419,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Chandrapur",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 58,
+      "fyjc_colleges": 224,
+      "fyjc_offerings": 739,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Dhule",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 22,
+      "fyjc_colleges": 175,
+      "fyjc_offerings": 580,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Gadchiroli",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 19,
+      "fyjc_colleges": 145,
+      "fyjc_offerings": 380,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Gondia",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 24,
+      "fyjc_colleges": 200,
+      "fyjc_offerings": 688,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Hingoli",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 7,
+      "fyjc_colleges": 119,
+      "fyjc_offerings": 493,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Jalgaon",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 106,
+      "fyjc_colleges": 269,
+      "fyjc_offerings": 1069,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Jalna",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 18,
+      "fyjc_colleges": 267,
+      "fyjc_offerings": 1223,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Kolhapur",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 80,
+      "fyjc_colleges": 294,
+      "fyjc_offerings": 1277,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Latur",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 23,
+      "fyjc_colleges": 255,
+      "fyjc_offerings": 1040,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Mumbai City",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 5,
+      "fyjc_colleges": null,
+      "fyjc_offerings": null,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Mumbai Suburban",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 27,
+      "fyjc_colleges": null,
+      "fyjc_offerings": null,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Nagpur",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 95,
+      "fyjc_colleges": 465,
+      "fyjc_offerings": 1956,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Nanded",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 29,
+      "fyjc_colleges": 263,
+      "fyjc_offerings": 1128,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Nandurbar",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 10,
+      "fyjc_colleges": 86,
+      "fyjc_offerings": 328,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2026-27",
+        "2025-26"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Nashik",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 74,
+      "fyjc_colleges": 449,
+      "fyjc_offerings": 1914,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "depth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Dharashiv",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 21,
+      "fyjc_colleges": 130,
+      "fyjc_offerings": 500,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Palghar",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 21,
+      "fyjc_colleges": 214,
+      "fyjc_offerings": 1036,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Parbhani",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 14,
+      "fyjc_colleges": 220,
+      "fyjc_offerings": 899,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Pune",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 172,
+      "fyjc_colleges": 726,
+      "fyjc_offerings": 3451,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "depth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Raigad",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 25,
+      "fyjc_colleges": 199,
+      "fyjc_offerings": 983,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Ratnagiri",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 22,
+      "fyjc_colleges": 141,
+      "fyjc_offerings": 691,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2026-27",
+        "2025-26"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Sangli",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 63,
+      "fyjc_colleges": 237,
+      "fyjc_offerings": 887,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2026-27",
+        "2025-26"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Satara",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 34,
+      "fyjc_colleges": 212,
+      "fyjc_offerings": 877,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2026-27",
+        "2025-26"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Sindhudurg",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 13,
+      "fyjc_colleges": 66,
+      "fyjc_offerings": 336,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2026-27",
+        "2025-26"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Solapur",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 95,
+      "fyjc_colleges": 401,
+      "fyjc_offerings": 1595,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Thane",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 31,
+      "fyjc_colleges": 464,
+      "fyjc_offerings": 2172,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Wardha",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 25,
+      "fyjc_colleges": 140,
+      "fyjc_offerings": 483,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Washim",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 17,
+      "fyjc_colleges": 204,
+      "fyjc_offerings": 727,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    },
+    {
+      "district": "Yavatmal",
+      "poly_institutes": null,
+      "poly_offerings": null,
+      "iti_institutes": 29,
+      "fyjc_colleges": 326,
+      "fyjc_offerings": 1009,
+      "poly_cutoff_years": [],
+      "fyjc_cutoff_years": [
+        "2025-26",
+        "2026-27"
+      ],
+      "poly_fee_verified_pct": null,
+      "hostel_known_pct": null,
+      "layer": "breadth",
+      "last_refreshed": "2026-10-29T08:19:04.746307+00:00"
+    }
+  ],
+  "unknown_location_institutions": 876,
+  "imports": [
+    {
+      "id": "5672ce5094d02599980735e0",
+      "institutions_published": 11676,
+      "institutions_staged": 3206,
+      "offerings_published": 45844,
+      "offerings_staged": 12586,
+      "cutoffs": 633501,
+      "raw_counts": {
+        "admission_cutoffs": 633501,
+        "admission_cycles": 33,
+        "data_provenance": 706143,
+        "districts": 37,
+        "institution_identifiers": 14882,
+        "institution_programs": 58430,
+        "institutions": 14882,
+        "programs": 411,
+        "scholarship_schemes": 55,
+        "seat_matrices": 273444,
+        "source_documents": 530,
+        "verification_queue": 3564
+      },
+      "districts": [
+        "Ahilyanagar",
+        "Akola",
+        "Amravati",
+        "Beed",
+        "Bhandara",
+        "Buldhana",
+        "Chandrapur",
+        "Chhatrapati Sambhajinagar",
+        "Dharashiv",
+        "Dhule",
+        "Gadchiroli",
+        "Gondia",
+        "Hingoli",
+        "Jalgaon",
+        "Jalna",
+        "Kolhapur",
+        "Latur",
+        "Mumbai City",
+        "Mumbai City/Suburban",
+        "Mumbai Suburban",
+        "Nagpur",
+        "Nanded",
+        "Nandurbar",
+        "Nashik",
+        "Palghar",
+        "Parbhani",
+        "Pune",
+        "Raigad",
+        "Ratnagiri",
+        "Sangli",
+        "Satara",
+        "Sindhudurg",
+        "Solapur",
+        "Thane",
+        "Wardha",
+        "Washim",
+        "Yavatmal"
+      ],
+      "sha256": "5672ce5094d02599980735e02d05bc5e82da440ae2201b04abfd8361a217fec9",
+      "review": {
+        "origin": "supplied_database",
+        "decision": "inherit_existing_status_only",
+        "note": "Existing verified flags are preserved; pending rows remain withheld. No new human review is claimed."
+      },
+      "warnings": [
+        "No fees or hostel records are present.",
+        "Cutoff merit metrics and board aggregate rules need official verification.",
+        "Records with unknown academic year remain directory-only.",
+        "Pending legacy verification items remain quarantined."
+      ],
+      "published_at": "2026-10-29T07:38:25.810176+00:00"
+    },
+    {
+      "id": "poly-v7:afd5fbcf7d5ac4ae2b889c92",
+      "run_id": "poly-v7:afd5fbcf7d5ac4ae2b889c92",
+      "archive_sha256": "afd5fbcf7d5ac4ae2b889c92009192d82161a19eedce029462196ecf337bd573",
+      "institutions_reconciled": 449,
+      "offerings_reconciled": 3918,
+      "changed_existing_facts": [],
+      "academic_year": "2026-27",
+      "source_url": "https://project26api.4pindia.com/platform_api_26/common/public/institutecourses?course_name=poly",
+      "year_evidence_url": "https://poly26.dtemaharashtra.gov.in/poly_26/assets/pdf/Diploma%20Admission%20Information%20Brochure%202026-27.pdf",
+      "known_gaps": [
+        "Polytechnic district values remain unavailable.",
+        "No institutional fees or hostel records supplied.",
+        "No public institute-level cutoffs supplied.",
+        "Course management type is not approval status."
+      ],
+      "review_origin": "user_supplied_reviewed_extract",
+      "note": "Existing published identities retained. Source metadata and course management type are recorded; no missing fact is inferred.",
+      "applied": true,
+      "published_at": "2026-10-29T08:19:04.746307+00:00"
+    }
+  ],
+  "note": "Coverage reflects the supplied database, with unresolved records withheld. No institutional fees or hostels are verified in the supplied dump. Historical FYJC records have unspecified merit metrics; personal cutoff comparison is disabled for these records."
+}

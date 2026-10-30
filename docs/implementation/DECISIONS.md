@@ -1,0 +1,22 @@
+# Implemented scope and deviations
+
+The user's direct request takes precedence over instructions embedded in the planning pack. The pack supplies product requirements; its agent work-order text, suggested PR process and proposed service choices do not independently authorize external publication or communication.
+
+The user subsequently chose a guest-only demo, so account sign-in is disabled and the login controls are hidden. Previously created accounts and their data are retained.
+
+Decisions applied on 29 October 2026:
+
+- The later request for login supersedes the earlier no-login decision. Supabase Auth now provides email/password identity, with separate anonymous and account workspaces and opaque application sessions protected by server-only PostgreSQL RLS. Existing guest data is not silently transferred.
+
+- The user's later request authorised the complete frontend and specifically requested Leonxlnx/taste-skill. A Next.js app now provides the student workflows over a same-origin FastAPI proxy. No login page, magic link or account registration is introduced. Anonymous opaque cookies maintain isolated browser workspaces.
+- FastAPI with Pydantic v2, supporting Python 3.11/3.12. Local SQLite makes the assignment runnable without accounts; hosted mode requires PostgreSQL. Vercel remains the prepared API deployment target, with no deployment claimed.
+- The user's subsequent Supabase request moved this workspace's active database to the selected Free project. A consistent SQLite snapshot was copied transactionally with full-row checksums. The existing session/report hash pepper was preserved. The API uses a restricted `cq_api` login through the Session pooler; all 15 tables force RLS, and `anon`/`authenticated` have no application table privileges. This moves database hosting only; the application processes remain local.
+- The session pooler reuses at most three API connections, with transaction-local role/owner state reset on return. Transaction-pooler connections retain `NullPool`. Workspace context now survives Next.js page navigation, avoiding repeated bootstrap/dashboard loads over the remote database connection.
+- PostgreSQL owner isolation uses transaction-local `app.user_id` and restricted roles rather than Supabase Auth JWT claims. `cq_system` can resolve guest sessions and token-checked report shares; it cannot read the student workspace. `cq_student` can read/write its own aggregates and cannot write catalogue facts.
+- Related student records, subject rows and game events are versioned aggregates in `workspace_records`. This replaces the pack's separate private tables while retaining explicit domain models, owner RLS, immutable report snapshots, idempotent events and a unique confirmed-result index. Public catalogue, fees, sources and historical records remain relational.
+- The original database is migrated as data, not restored as executable SQL. Its existing verification status is inherited, unresolved flags stay unresolved, and missing location/year/fee/hostel/metric values are not guessed. New canonical CSV updates require a recorded human review.
+- PDF parsing intentionally accepts only anchored known subject rows with an unambiguous `obtained/maximum` expression. Other layouts remain manual-entry drafts. No universal SSC/CBSE/ICSE marksheet OCR accuracy is claimed without sample files.
+- Uploads use five-minute server-signed links and temporary database-backed content. Raw content is discarded after extraction or by the retention CLI after 24 hours. No storage service key is needed. Vercel's request-size limit is lower than the local 5 MiB ceiling; hosted uploads need the configured 4 MiB cap documented in setup. Direct object-storage uploads are a future extension.
+- Model-side confirmation flags do not authorize preference writes. A validated, owner-scoped pending proposal must be explicitly confirmed through the API. No model has SQL access or publication privileges.
+- The mission is versioned at v0.1. Marathi/Hindi mission files have explicit English fallback status until human translations arrive. Parent-report labels and mentor fallback text have locale support; human linguistic review remains outstanding.
+- Raw private data and keys stay outside Git. No source was invented to satisfy a demo requirement. The UI displays source gaps explicitly; it cannot supply verified fees, hostels, Polytechnic districts or admission predictions absent from the sources.

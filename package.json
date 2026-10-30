@@ -1,0 +1,12 @@
+{
+  "name": "careerquest-backend-contracts",
+  "private": true,
+  "scripts": {
+    "generate:types": "openapi-typescript docs/openapi.json -o packages/api-client/schema.d.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.10.1",
+    "typescript": "^5.9.3"
+  }
+}

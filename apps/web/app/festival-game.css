@@ -1,0 +1,35 @@
+.festival-game { display: grid; grid-template-columns: minmax(260px, .85fr) minmax(400px, 1.15fr); gap: 28px; align-items: stretch; }
+.festival-intro { border-radius: 26px; padding: clamp(24px, 3vw, 44px); background: #ded0f5; }
+.festival-tag { font-size: 12px; font-weight: 700; color: #503a6a; letter-spacing: .04em; }
+.festival-intro h1 { margin-top: 30px; font-size: clamp(32px, 3.1vw, 44px); line-height: 1.05; font-weight: 700; letter-spacing: -.05em; }
+.festival-intro h1 span { color: #5236a9; }
+.festival-intro > p:not(.festival-note) { max-width: 40ch; color: #414750; font-size: 15px; line-height: 1.6; margin: 20px 0; }
+.festival-stats { display: flex; gap: 14px; margin: 26px 0; }
+.festival-stats span { flex: 1; background: #fff9; border-radius: 14px; padding: 12px; color: #414750; font-size: 12px; }
+.festival-stats strong { display: block; font-size: 24px; color: #20242c; line-height: 1.1; }
+.festival-primary { display: flex; gap: 20px; justify-content: space-between; align-items: center; width: 100%; border: 0; border-radius: 14px; background: #20242c; color: #fff; padding: 15px 18px; font: inherit; font-weight: 700; cursor: pointer; }
+.festival-replay, .festival-skip { display: block; width: 100%; padding: 12px 0; border: 0; background: transparent; text-align: left; color: #292337; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.festival-note { font-size: 12px; line-height: 1.5; color: #4c4658; margin-top: 12px; }
+.festival-board-wrap { background: #fff; border-radius: 26px; padding: 24px; }
+.festival-board-top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; margin-bottom: 20px; }
+.festival-board-top strong, .festival-board-top span { display: block; }
+.festival-board-top strong { font-size: 19px; }
+.festival-board-top div span { color: #535f69; font-size: 13px; margin-top: 4px; }
+.festival-ticket { background: #ffe694; border-radius: 999px; padding: 8px 11px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.festival-board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.festival-cell { min-width: 0; min-height: 115px; border: 0; border-radius: 17px; padding: 12px; background: #c9eee1; color: #20242c; font: inherit; font-weight: 600; font-size: 12px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 8px; text-align: left; cursor: pointer; }
+.festival-cell-1 { background: #ffd4e8; }.festival-cell-2 { background: #ffe694; }.festival-cell-3 { background: #ded0f5; }
+.festival-cell:disabled { color: #20242c; opacity: 1; cursor: default; }.festival-cell:not(:disabled):hover { transform: translateY(-3px); }
+.festival-cell-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: #fff; font-size: 20px; }
+.festival-cell.revealed .festival-cell-icon { background: #20242c; color: #ffe694; }
+.festival-feedback { min-height: 40px; padding: 16px 0 0; font-size: 14px; font-weight: 600; }
+.festival-continue { margin-top: 14px; }
+@media (max-width: 850px) { .festival-game { grid-template-columns: 1fr; gap: 14px; }.festival-intro h1 { margin-top: 18px; }.festival-intro { padding: 24px; } }
+@media (max-width: 500px) { .festival-board-wrap { padding: 16px; }.festival-board { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }.festival-cell { min-height: 90px; padding: 10px; }.festival-intro h1 { font-size: 32px; }.festival-ticket { display: none; } }
+@media (prefers-reduced-motion: reduce) { .festival-cell:not(:disabled):hover { transform: none; } }
+.festival-game .festival-board { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.festival-game .festival-cell { min-height: 170px; }
+.festival-game .festival-cell span:last-child { font-size: 12px; font-weight: 700; }
+.festival-game .festival-cell:disabled:not(.revealed) { opacity: .52; }
+.festival-game .festival-cell.revealed { outline: 3px solid #20242c; outline-offset: -3px; }
+@media (max-width: 500px) { .festival-game .festival-board { grid-template-columns: repeat(2, minmax(0, 1fr)); } .festival-game .festival-cell { min-height: 150px; } }

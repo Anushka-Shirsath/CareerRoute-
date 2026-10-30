@@ -1,0 +1,4 @@
+-r requirements.lock.txt
+# Optional local PostgreSQL test server (CI uses its own PostgreSQL 16 service).
+pgserver==0.1.4; python_version < "3.13"
+pip-audit==2.10.1

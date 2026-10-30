@@ -1,0 +1,342 @@
+{
+  "id": "mission1",
+  "ruleset": "v0.1",
+  "title": "The School Innovation Festival",
+  "nodes": [
+    {
+      "id": "S1",
+      "type": "choice",
+      "text": "Your school's Innovation Festival is in 4 days. Your team needs you. What do you grab first?",
+      "options": [
+        {
+          "id": "S1.a",
+          "text": "The toolbox. Someone has to build the model.",
+          "tags": {
+            "PM": 1
+          }
+        },
+        {
+          "id": "S1.b",
+          "text": "The budget sheet. Let us see what we can afford.",
+          "tags": {
+            "EN": 1
+          }
+        },
+        {
+          "id": "S1.c",
+          "text": "Sketch paper. The stall has to look amazing.",
+          "tags": {
+            "CR": 1
+          }
+        },
+        {
+          "id": "S1.d",
+          "text": "The team list. I will make sure everyone knows their job.",
+          "tags": {
+            "SO": 1
+          }
+        },
+        {
+          "id": "S1.e",
+          "text": "The judging rules. Let us find out what they score.",
+          "tags": {
+            "AN": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "S2",
+      "type": "choice",
+      "text": "The night before, your working model stops working.",
+      "options": [
+        {
+          "id": "S2.a",
+          "text": "Test each part one by one until I find the fault.",
+          "tags": {
+            "AN": 1
+          }
+        },
+        {
+          "id": "S2.b",
+          "text": "Rebuild it fast with spare parts.",
+          "tags": {
+            "PM": 1
+          }
+        },
+        {
+          "id": "S2.c",
+          "text": "Switch to a poster and short video that shows the idea.",
+          "tags": {
+            "CR": 1
+          }
+        },
+        {
+          "id": "S2.d",
+          "text": "Calm the team and split the fixing work.",
+          "tags": {
+            "SO": 1
+          }
+        },
+        {
+          "id": "S2.e",
+          "text": "Decide what we can drop and still have a good stall.",
+          "tags": {
+            "EN": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "S3",
+      "type": "choice",
+      "text": "Supplies cost ₹600 more than your budget.",
+      "options": [
+        {
+          "id": "S3.a",
+          "text": "Compare prices at three shops and work out the cheapest mix.",
+          "tags": {
+            "AN": 0.5,
+            "EN": 0.5
+          }
+        },
+        {
+          "id": "S3.b",
+          "text": "Sell snacks at lunch to raise the money.",
+          "tags": {
+            "EN": 1
+          }
+        },
+        {
+          "id": "S3.c",
+          "text": "Make parts from scrap.",
+          "tags": {
+            "PM": 1
+          }
+        },
+        {
+          "id": "S3.d",
+          "text": "Explain the problem to a teacher and ask for help.",
+          "tags": {
+            "SO": 1
+          }
+        },
+        {
+          "id": "S3.e",
+          "text": "Simplify the design so it costs less but still looks good.",
+          "tags": {
+            "CR": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "R1",
+      "type": "multi_select",
+      "text": "Which activities would you happily do again? Pick any, or none.",
+      "options": []
+    },
+    {
+      "id": "S4",
+      "type": "choice",
+      "text": "Visitors keep walking away confused.",
+      "options": [
+        {
+          "id": "S4.a",
+          "text": "Draw a clear diagram anyone can follow.",
+          "tags": {
+            "CR": 1
+          }
+        },
+        {
+          "id": "S4.b",
+          "text": "Run a live demo every 10 minutes.",
+          "tags": {
+            "PM": 1
+          }
+        },
+        {
+          "id": "S4.c",
+          "text": "Talk to each visitor and explain patiently.",
+          "tags": {
+            "SO": 1
+          }
+        },
+        {
+          "id": "S4.d",
+          "text": "Ask five visitors what confused them, then fix that.",
+          "tags": {
+            "AN": 1
+          }
+        },
+        {
+          "id": "S4.e",
+          "text": "Make a one-line pitch that pulls people in.",
+          "tags": {
+            "EN": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "S5",
+      "type": "choice",
+      "text": "Two teammates disagree about the final design and time is running out.",
+      "options": [
+        {
+          "id": "S5.a",
+          "text": "List the facts behind each idea and compare.",
+          "tags": {
+            "AN": 1
+          }
+        },
+        {
+          "id": "S5.b",
+          "text": "Take a quick vote and move on.",
+          "tags": {
+            "EN": 1
+          }
+        },
+        {
+          "id": "S5.c",
+          "text": "Talk to each of them privately first.",
+          "tags": {
+            "SO": 1
+          }
+        },
+        {
+          "id": "S5.d",
+          "text": "Build a quick version of both and test.",
+          "tags": {
+            "PM": 1
+          }
+        },
+        {
+          "id": "S5.e",
+          "text": "Combine the best parts into a new design.",
+          "tags": {
+            "CR": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "MT",
+      "type": "minitask",
+      "text": "Try a different kind of activity. There is no timer pressure.",
+      "options": []
+    },
+    {
+      "id": "MT_RATE",
+      "type": "rating",
+      "text": "Did you enjoy that task? Rate from 1 to 5.",
+      "options": []
+    },
+    {
+      "id": "S6",
+      "type": "choice",
+      "text": "The principal asks you to lead one thing next year. You pick...",
+      "options": [
+        {
+          "id": "S6.a",
+          "text": "The science and data corner",
+          "tags": {
+            "AN": 1
+          }
+        },
+        {
+          "id": "S6.b",
+          "text": "The build workshop",
+          "tags": {
+            "PM": 1
+          }
+        },
+        {
+          "id": "S6.c",
+          "text": "The art and design wall",
+          "tags": {
+            "CR": 1
+          }
+        },
+        {
+          "id": "S6.d",
+          "text": "The stall business and sponsors",
+          "tags": {
+            "EN": 1
+          }
+        },
+        {
+          "id": "S6.e",
+          "text": "The welcome and helper team",
+          "tags": {
+            "SO": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "V1",
+      "type": "values",
+      "text": "What matters most in the next few years? Pick up to two.",
+      "options": [
+        {
+          "id": "earn_early",
+          "text": "Start earning sooner",
+          "tags": {}
+        },
+        {
+          "id": "deep_study",
+          "text": "Study a subject deeply for years",
+          "tags": {}
+        },
+        {
+          "id": "creative_freedom",
+          "text": "Freedom to create",
+          "tags": {}
+        },
+        {
+          "id": "helping_people",
+          "text": "Helping people",
+          "tags": {}
+        },
+        {
+          "id": "own_business",
+          "text": "Running my own thing one day",
+          "tags": {}
+        },
+        {
+          "id": "stay_near_home",
+          "text": "Staying near home",
+          "tags": {}
+        }
+      ]
+    }
+  ],
+  "mini_tasks": {
+    "AN": {
+      "text": "Visitors per hour: 4, 8, 16, ? Pick 24, 32, or 20. What would you measure to know if the stall worked?",
+      "choices": [
+        "24",
+        "32",
+        "20"
+      ],
+      "hint": "Look for a repeated multiplication."
+    },
+    "PM": {
+      "text": "Order the steps: switch off power; inspect the connection; secure the loose connection; switch on and test.",
+      "hint": "Safety comes before inspection."
+    },
+    "CR": {
+      "text": "Choose a poster layout for a 10-year-old: large diagram, photo story, or illustrated steps. Explain your choice.",
+      "hint": "There is no right answer."
+    },
+    "EN": {
+      "text": "Badges cost ₹10 each. At ₹15 sell 20; at ₹20 sell 18; at ₹30 sell 8. Which price earns the most?",
+      "hint": "Compare (price minus cost) times quantity."
+    },
+    "SO": {
+      "text": "A visitor is upset that their child broke a model. Choose: reassure and help; explain repair options; invite them to rebuild together.",
+      "hint": "There is no right answer."
+    }
+  }
+}

@@ -1,0 +1,87 @@
+/* CareerQuest's student dashboard: tactile pastel tiles with clear dark ink. */
+:root {
+  --ground: #eef0f1;
+  --surface: #ffffff;
+  --active: #e4e8e9;
+  --accent: #2856d9;
+  --accent-pale: #dce9ff;
+  --text: #20242c;
+  --muted: #4d5863;
+  --mint: #c9eee1;
+  --pink: #ffd4e8;
+  --yellow: #ffe694;
+  --lavender: #ded0f5;
+}
+body, .app-shell, .app-body, .sidebar, .mobile-bar { background: #eef0f1; }
+.sidebar { background: #fff; border-radius: 0 24px 24px 0; }
+.main-content, .app-footer { background: #f4f4f5; }
+.main-content { border-radius: 24px 24px 0 0; }
+.app-footer { border-radius: 0 0 24px 24px; }
+.panel { background: #fff; }
+.home-hero { display: block; background: transparent; text-align: left; padding: 0; margin: 2px 0 12px; }
+.home-hero h1 { font-size: clamp(27px, 2.5vw, 32px); font-weight: 700; letter-spacing: -.045em; }
+.home-hero p { margin: 7px 0 0; max-width: 65ch; }
+.demo-line { margin: 0 0 24px; }
+.home-activities { margin: 0 0 24px; }
+.home-activities h2, .home-section-heading { font-size: 21px; letter-spacing: -.035em; font-weight: 700; margin: 0 0 12px; }
+.home-activity-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.home-activity { position: relative; display: flex; min-height: 120px; flex-direction: column; justify-content: space-between; gap: 18px; padding: 18px 20px; border-radius: 20px; color: #20242c; transition: transform .16s ease; }
+.home-activity:hover { transform: translateY(-2px); }
+.home-activity:focus-visible { outline: 3px solid #2856d9; outline-offset: 3px; }
+.activity-colleges { background: var(--mint); }
+.activity-pathways { background: var(--pink); }
+.activity-kicker { color: #414d56; font-size: 13px; font-weight: 600; }
+.home-activity strong { font-size: 20px; letter-spacing: -.025em; padding-right: 42px; }
+.activity-arrow { position: absolute; right: 16px; bottom: 16px; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #fff; font-size: 20px; }
+.journey-strip { background: transparent; gap: 12px; padding: 0; margin-bottom: 16px; }
+.journey-step { border: 0; padding: 0; border-radius: 18px; overflow: hidden; }
+.journey-step:nth-child(1) { background: var(--yellow); }
+.journey-step:nth-child(2) { background: var(--lavender); }
+.journey-step:nth-child(3) { background: #c9eee1; }
+.journey-step:nth-child(4) { background: #ffd4e8; }
+.journey-step a { display: block; min-height: 110px; padding: 16px; }
+.journey-step .journey-label, .journey-step p { color: #3d4650; }
+.journey-step strong { font-size: 19px; color: #20242c; }
+.journey-status { background: #5d6670; }
+.journey-status.complete { background: #28694f; }
+.home-grid > .next-panel { background: #ffe694; }
+.home-grid > .span-7 { background: #ded0f5; }
+.home-grid > #next-steps { background: #fff; }
+.home-grid > .compass-invite { background: #c9eee1; color: #20242c; }
+.compass-invite p { color: #344d45; }
+.compass-invite .compass-motif { color: #266751; }
+.compass-invite .button.secondary { background: #fff; color: #20242c; }
+.route-list a { border-color: #c8b8df; }
+.draft-preview strong { color: #20242c; }
+.mentor-prompt { background: #d8eceb; border: 0; border-radius: 20px; padding: 18px 20px; }
+.nav-item.active { background: #20242c; color: #fff; }
+.nav-item.active:hover { background: #303741; color: #fff; }
+@media (max-width: 1150px) {
+  .mobile-bar, .sidebar.sidebar-open { background: #fff; }
+}
+@media (max-width: 600px) {
+  .main-content { padding-top: 22px; }
+  .home-hero { padding: 0; margin: 0 0 12px; }
+  .home-hero h1 { font-size: 25px; }
+  .home-hero p { font-size: 14px; margin: 7px 0 0; }
+  .demo-line { align-items: flex-start; margin-bottom: 22px; }
+  .home-activities h2, .home-section-heading { font-size: 19px; }
+  .home-activity-grid { gap: 10px; }
+  .home-activity { min-height: 128px; padding: 15px; }
+  .home-activity strong { font-size: 16px; line-height: 1.25; padding-right: 30px; }
+  .activity-kicker { font-size: 12px; }
+  .activity-arrow { width: 28px; height: 28px; right: 10px; bottom: 10px; font-size: 17px; }
+  .journey-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 0; }
+  .journey-step, .journey-step:nth-child(2) { border: 0; }
+  .journey-step a { padding: 14px; min-height: 110px; }
+  .journey-step strong { font-size: 17px; }
+  .mentor-prompt { padding: 16px; }
+}
+@media (prefers-reduced-motion: reduce) { .home-activity { transition: none; } }
+@media print { .main-content, .app-footer, .panel { background: #fff !important; } }
+.master-evidence-section + .master-evidence-section { margin-top: 28px; }
+.master-evidence-section h3 { font-size: 17px; }
+.master-evidence-row { display: flex; gap: 18px; justify-content: space-between; align-items: flex-start; padding: 14px 0; border-bottom: 1px solid #e1e6e8; font-size: 14px; }
+.master-evidence-row p, .master-evidence-row small { color: #505c68; font-size: 13px; margin: 4px 0; }
+.master-evidence-row a { white-space: nowrap; color: #214aa9; font-weight: 600; }
+@media(max-width:600px) { .master-evidence-row { flex-direction: column; gap: 4px; } }

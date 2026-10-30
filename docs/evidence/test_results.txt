@@ -1,0 +1,39 @@
+........................................................................ [ 63%]
+.........................................                                [100%]
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\Users\Lenovo\OneDrive\Desktop\Spektra System\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.11.5-final-0 _______________
+
+Name                                  Stmts   Miss  Cover   Missing
+-------------------------------------------------------------------
+services\api\app\__init__.py              0      0   100%
+services\api\app\ai\__init__.py           0      0   100%
+services\api\app\ai\guard.py             46      2    96%   23, 35
+services\api\app\ai\mentor.py            84     12    86%   19, 21, 32, 39, 57, 68-72, 80, 91
+services\api\app\ai\tools.py             71     13    82%   36, 41-42, 44-45, 47, 53, 60, 64, 66, 75, 84, 87
+services\api\app\catalogue.py           144     21    85%   16, 26, 29, 59, 72, 74, 89, 92, 103, 110-116, 129-131, 150-151
+services\api\app\config.py               25      3    88%   25, 27, 29
+services\api\app\content.py               6      0   100%
+services\api\app\db.py                   71      2    97%   12, 14
+services\api\app\domain\__init__.py       0      0   100%
+services\api\app\domain\compass.py      138     14    90%   16, 38, 40, 43, 46, 49, 51, 53, 55, 57, 59, 61, 63, 80
+services\api\app\domain\costs.py         39      6    85%   31-36
+services\api\app\domain\matching.py     110     29    74%   10-20, 30, 37, 49, 62, 64, 69-70, 86, 89, 94-95, 98-99, 103-104, 110-112
+services\api\app\domain\results.py       27      0   100%
+services\api\app\errors.py                3      0   100%
+services\api\app\guides.py                7      1    86%   9
+services\api\app\main.py                429     80    81%   48-51, 77, 111, 136, 158, 162-163, 167-168, 172-173, 181, 203, 212-222, 230, 243-246, 250, 254-257, 275, 297, 305, 307, 317-318, 320, 328, 336-337, 345, 356, 358, 360, 362, 364, 366, 372, 376-379, 389, 411-416, 424-426, 430, 450-452, 456-458, 469-471, 481
+services\api\app\models.py              107      0   100%
+services\api\app\pdf_extract.py          35      7    80%   12, 20, 23-24, 36-37, 39
+services\api\app\responses.py           125      0   100%
+services\api\app\retention.py            21      1    95%   23
+services\api\app\schemas.py             128      1    99%   26
+services\api\app\student.py             215     17    92%   79, 81, 98-100, 107, 113, 138-140, 156, 163, 174, 201-202, 230, 236
+-------------------------------------------------------------------
+TOTAL                                  1831    209    89%
+113 passed, 1 warning in 57.86s

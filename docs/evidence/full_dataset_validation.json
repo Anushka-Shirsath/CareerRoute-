@@ -1,0 +1,54 @@
+{
+  "sqlite": {
+    "matches_total_pune_polytechnic": 0,
+    "matches_total_statewide_polytechnic": 3918,
+    "sample_offerings": [
+      "dump:98080",
+      "dump:98081"
+    ],
+    "pune_empty_search_p50_ms": 81.14,
+    "pune_empty_search_p95_ms": 116.93,
+    "sample_count": 7,
+    "coverage_rows": 36,
+    "unknown_location_institutions": 876,
+    "checks": [
+      "source-linked real offerings",
+      "confirmed synthetic result",
+      "ranking",
+      "cost unknowns retained",
+      "shortlist persistence",
+      "share sections",
+      "immediate revocation",
+      "workspace deletion",
+      "empty Pune Polytechnic search explains missing districts"
+    ]
+  },
+  "database_size_bytes": 247975936,
+  "scope": "Local measurements only; no deployed latency claim.",
+  "postgresql": {
+    "matches_total_pune_polytechnic": 0,
+    "matches_total_statewide_polytechnic": 3918,
+    "sample_offerings": [
+      "dump:98080",
+      "dump:98081"
+    ],
+    "pune_empty_search_p50_ms": 2186.46,
+    "pune_empty_search_p95_ms": 3107.62,
+    "sample_count": 7,
+    "coverage_rows": 36,
+    "unknown_location_institutions": 876,
+    "checks": [
+      "source-linked real offerings",
+      "confirmed synthetic result",
+      "ranking",
+      "cost unknowns retained",
+      "shortlist persistence",
+      "share sections",
+      "immediate revocation",
+      "workspace deletion",
+      "empty Pune Polytechnic search explains missing districts"
+    ],
+    "database_size_bytes": 275739107,
+    "database_size_mb": 262.97
+  }
+}

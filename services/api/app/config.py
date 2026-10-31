@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Literal
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -19,6 +20,7 @@ class Settings(BaseSettings):
     demo_mode: bool = True
     auth_enabled: bool = False
     master_enabled: bool = False
+    evidence_backend: Literal['local', 'postgres'] = 'local'
     supabase_url: str = ''
     supabase_publishable_key: str = ''
     max_upload_bytes: int = 5 * 1024 * 1024

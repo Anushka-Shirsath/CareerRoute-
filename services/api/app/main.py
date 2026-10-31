@@ -1,4 +1,5 @@
 import base64
+import asyncio
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 import hashlib
@@ -30,6 +31,8 @@ from .errors import Problem
 from .guides import guide
 from .models import AccountSession, DomainEvent, GuestSession, RateCounter, Record, Sensitive, Share, now, uid
 from .pdf_extract import document_as_pdf, extract_pdf
+from .request_limits import RequestBodyLimit
+from .scan_process import scan_document
 from .schemas import (
     ChecklistInput, CompassReportInput, ConfirmResult, CostCompare, ExtractRequest,
     GameEvent, GoalInput, ManualResult, MatchRequest, MentorInput, ParentReportInput,
@@ -94,6 +97,7 @@ def consume(db, user_id, resource, maximum, period='day', code='AI_RATE_LIMITED'
 
 def public_db(request: Request):
     with transaction(request.app.state.engine) as db:
+        db.info['evidence_backend'] = request.app.state.settings.evidence_backend
         role(db, 'cq_public')
         yield db
 
@@ -113,6 +117,7 @@ def private_student(request: Request):
     if {'student_id', 'user_id'} & set(request.query_params):
         raise Problem('VALIDATION_FAILED', 'Student identity is derived from the browser session.')
     with transaction(request.app.state.engine) as db:
+        db.info['evidence_backend'] = request.app.state.settings.evidence_backend
         role(db, 'cq_system')
         row = db.get(AccountSession if account_token else GuestSession, token_hash(token, request.app.state.settings.share_token_pepper))
         if row is None or row.expires_at <= now():
@@ -139,6 +144,8 @@ def create_app(settings=None, engine=None):
             secret_path.write_text(secrets.token_hex(32), encoding='utf-8')
         settings.share_token_pepper = secret_path.read_text(encoding='utf-8').strip()
     engine = engine or make_engine(settings.database_url)
+    if settings.evidence_backend == 'postgres' and engine.dialect.name != 'postgresql':
+        raise ValueError('PostgreSQL evidence requires a PostgreSQL database.')
 
     @asynccontextmanager
     async def lifespan(application):
@@ -152,6 +159,7 @@ def create_app(settings=None, engine=None):
     app.state.engine, app.state.settings = engine, settings
     origins = [x.strip() for x in settings.allowed_origins.split(',') if x.strip()]
     app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], allow_headers=['Content-Type', 'Authorization'])
+    app.add_middleware(RequestBodyLimit)
 
     @app.middleware('http')
     async def request_context(request, call_next):
@@ -162,8 +170,6 @@ def create_app(settings=None, engine=None):
             own_origin = str(request.base_url).rstrip('/')
             if origin and origin not in origins and origin != own_origin:
                 return JSONResponse({'error': {'code': 'FORBIDDEN', 'message': 'Origin is not allowed.', 'fields': []}, 'request_id': request.state.request_id}, status_code=403)
-        if int(request.headers.get('content-length', '0') or 0) > 6 * 1024 * 1024:
-            return JSONResponse({'error': {'code': 'UPLOAD_REJECTED', 'message': 'Request exceeds the size limit.', 'fields': []}, 'request_id': request.state.request_id}, status_code=413)
         response = await call_next(request)
         response.headers['X-Request-ID'] = request.state.request_id
         response.headers['X-Content-Type-Options'] = 'nosniff'
@@ -437,9 +443,13 @@ def create_app(settings=None, engine=None):
                 raise Problem('CONFLICT', 'Upload link has already been used.', 409)
             if len(content) != row.data['size']:
                 raise Problem('UPLOAD_REJECTED', 'Uploaded size does not match the signed request.')
-            # Validate page count and parser safety before accepting storage.
-            extract_pdf(document_as_pdf(bytes(content), row.data['mime']), validate_only=True)
-            row.data = {**row.data, 'content': base64.b64encode(content).decode(), 'sha256': hashlib.sha256(content).hexdigest(), 'uploaded': True}
+            # Extract before committing anything: the original document never
+            # enters the database, including when extraction fails.
+            subjects, warnings = await asyncio.to_thread(
+                scan_document, bytes(content), row.data['mime']
+            )
+            row.data = {**row.data, 'content': None, 'extracted_subjects': subjects,
+                        'extraction_warnings': warnings, 'uploaded': True}
         return envelope(request, {'document_id': document_id, 'uploaded': True})
 
     @app.post(PREFIX + '/results/extract', response_model=Envelope[ResultView], tags=['Results'])
@@ -448,11 +458,18 @@ def create_app(settings=None, engine=None):
         if row.data.get('result_id'):
             existing = student.ws.require('result', row.data['result_id'])
             return envelope(request, {'result_id': existing.id, **existing.data})
-        if not row.data.get('content') or row.data['delete_after'] <= now():
+        if row.data['delete_after'] <= now():
             raise Problem('UPLOAD_REJECTED', 'Upload a PDF before extracting, or use manual entry.')
-        subjects, warnings = extract_pdf(document_as_pdf(base64.b64decode(row.data['content']), row.data['mime']))
+        subjects = row.data.get('extracted_subjects')
+        warnings = row.data.get('extraction_warnings', [])
+        if subjects is None:
+            # Compatibility with documents uploaded before this change.
+            if not row.data.get('content'):
+                raise Problem('UPLOAD_REJECTED', 'Upload a PDF before extracting, or use manual entry.')
+            subjects, warnings = extract_pdf(document_as_pdf(base64.b64decode(row.data['content']), row.data['mime']))
         data = student.create_result({'board': value.board, 'exam_year': value.exam_year, 'result_type': 'official', 'subjects': subjects}, 'pdf_text' if row.data['mime'] == 'application/pdf' else 'image_vision', value.document_id)
-        row.data = {**row.data, 'content': None, 'result_id': data['result_id']}
+        row.data = {**row.data, 'content': None, 'extracted_subjects': None,
+                    'extraction_warnings': None, 'result_id': data['result_id']}
         return envelope(request, {**data, 'warnings': warnings}, warnings)
 
     @app.get(PREFIX + '/compass/mission', response_model=Envelope, tags=['Compass'])
@@ -496,7 +513,7 @@ def create_app(settings=None, engine=None):
         if academic_year:
             query = query.where(catalogue.Offering.academic_year == academic_year)
         if max_annual_fee is not None:
-            candidates = local_catalogue.fee_candidates(max_annual_fee)
+            candidates = local_catalogue.fee_candidates(max_annual_fee, session=db)
             valid = []
             for start in range(0, len(candidates), 500):
                 ids = list(candidates)[start:start + 500]
@@ -521,7 +538,7 @@ def create_app(settings=None, engine=None):
         else:
             rows = list(db.execute(query.order_by(catalogue.Offering.id).limit(limit + 1)))
             next_cursor = rows[limit - 1][0].id if len(rows) > limit else None
-        return envelope(request, {'items': [{**catalogue.offering_facts(row[0], row[1]), **local_catalogue.evidence(row[0].id, row[1].id, row[0].data.get('program_code'))} for row in rows[:limit]], 'next_cursor': next_cursor, 'total': total, 'fee_filter_available': local_catalogue.available()})
+        return envelope(request, {'items': [{**catalogue.offering_facts(row[0], row[1]), **local_catalogue.evidence(row[0].id, row[1].id, row[0].data.get('program_code'), session=db)} for row in rows[:limit]], 'next_cursor': next_cursor, 'total': total, 'fee_filter_available': local_catalogue.available(session=db)})
 
     @app.get(PREFIX + '/catalogue/stats', response_model=Envelope, tags=['Catalogue'])
     def catalogue_stats(request: Request, db: PublicDB):
@@ -554,15 +571,15 @@ def create_app(settings=None, engine=None):
         return envelope(request, student.match(value.preferences.model_dump() if value.preferences else None, value.admission_context.model_dump() if value.admission_context else None, value.limit, value.cursor))
 
     @app.get(PREFIX + '/cutoff-options', response_model=Envelope, tags=['Matching'])
-    def cutoff_options(request: Request):
-        return envelope(request, {'available': local_catalogue.available(), 'options': local_catalogue.cutoff_options()})
+    def cutoff_options(request: Request, db: PublicDB):
+        return envelope(request, {'available': local_catalogue.available(session=db), 'options': local_catalogue.cutoff_options(session=db)})
 
     @app.post(PREFIX + '/cutoff-recommendations', response_model=Envelope, tags=['Matching'])
     def cutoff_recommendations(value: CutoffRecommendationInput, request: Request, student: StudentDep):
         if not student.academic():
             raise Problem('VALIDATION_FAILED', 'Confirm your marksheet result before comparing cutoffs.', 422)
         consume(student.db, student.ws.user_id, 'matches', 60, 'hour', 'CONFLICT')
-        rows = local_catalogue.historical_candidates(value.academic_year, value.round, value.stage, value.seat_type, value.merit_percent)
+        rows = local_catalogue.historical_candidates(value.academic_year, value.round, value.stage, value.seat_type, value.merit_percent, session=student.db)
         if rows is None:
             raise Problem('NOT_FOUND', 'Historical cutoff data is not available on this server.', 404)
         candidates = {'dump:' + str(row['offering_id']): row for row in rows}

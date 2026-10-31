@@ -23,11 +23,21 @@ def _path():
     return os.environ.get('CQ_LOCAL_CATALOGUE', str(Path(__file__).resolve().parents[3] / 'data/private/supplied-catalogue.db'))
 
 
-def available():
+def _postgres(session):
+    return session is not None and session.info.get('evidence_backend') == 'postgres'
+
+
+def available(session=None):
+    if _postgres(session):
+        from . import postgres_catalogue
+        return postgres_catalogue.available(session)
     return Path(_path()).is_file()
 
 
-def cutoff_options():
+def cutoff_options(session=None):
+    if _postgres(session):
+        from . import postgres_catalogue
+        return postgres_catalogue.cutoff_options(session)
     with _db() as db:
         if db is None:
             return []
@@ -38,7 +48,10 @@ def cutoff_options():
         return [dict(row) for row in rows]
 
 
-def historical_candidates(year, round_name, stage, seat_type, percentage):
+def historical_candidates(year, round_name, stage, seat_type, percentage, session=None):
+    if _postgres(session):
+        from . import postgres_catalogue
+        return postgres_catalogue.historical_candidates(session, year, round_name, stage, seat_type, percentage)
     with _db() as db:
         if db is None:
             return None
@@ -63,7 +76,10 @@ def _id(value):
     return int(value[5:]) if value.startswith('dump:') and value[5:].isdigit() else None
 
 
-def fee_candidates(cap):
+def fee_candidates(cap, session=None):
+    if _postgres(session):
+        from . import postgres_catalogue
+        return postgres_catalogue.fee_candidates(session, cap)
     with _db() as db:
         if db is None:
             return {}
@@ -80,7 +96,10 @@ def fee_candidates(cap):
         return result
 
 
-def evidence(offering_id, institution_id, program_code, include_cutoffs=False):
+def evidence(offering_id, institution_id, program_code, include_cutoffs=False, session=None):
+    if _postgres(session):
+        from . import postgres_catalogue
+        return postgres_catalogue.evidence(session, offering_id, institution_id, program_code, include_cutoffs)
     offering, institution = _id(offering_id), _id(institution_id)
     result = {'published_fee': None, 'historical_hostel': None, 'possible_cutoffs': []}
     with _db() as db:

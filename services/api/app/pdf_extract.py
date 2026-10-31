@@ -142,32 +142,10 @@ def _scan_text(content):
     return '\n'.join(lines)
 
 
-def extract_pdf(content, validate_only=False):
-    if not content.startswith(b'%PDF-'):
-        raise Problem('UPLOAD_REJECTED', 'Only a valid text PDF is supported.')
-    subjects = []
-    try:
-        with pdfplumber.open(io.BytesIO(content)) as pdf:
-            if len(pdf.pages) > 3:
-                raise Problem('UPLOAD_REJECTED', 'PDF must have at most 3 pages.')
-            if validate_only:
-                return [], []
-            text = '\n'.join((page.extract_text() or '') for page in pdf.pages)
-            if len(text) > 100000:
-                raise Problem('UPLOAD_REJECTED', 'PDF contains too much text.')
-            for page in pdf.pages:
-                for table in page.extract_tables():
-                    subjects.extend(_table_rows(table))
-    except Problem:
-        raise
-    except Exception:
-        raise Problem('UPLOAD_REJECTED', 'PDF could not be read. Use manual entry.') from None
-    if not text.strip():
-        text = _scan_text(content)
-        scanned = True
-        subjects.extend(_ssc_scan_rows(text))
-    else:
-        scanned = False
+def _text_rows(text):
+    # SSC layouts occur in both native text PDFs and OCR output. Require the
+    # printed number to agree with its written-out value in either case.
+    subjects = _ssc_scan_rows(text)
     # Only anchored, allowlisted subject rows with an unambiguous obtained/maximum
     # expression are accepted. Other uploaded text never enters prompts or storage.
     column_order = None
@@ -197,6 +175,39 @@ def extract_pdf(content, validate_only=False):
                     subjects.append(item)
             except ValueError:
                 continue
+    return subjects
+
+
+def extract_pdf(content, validate_only=False):
+    if not content.startswith(b'%PDF-'):
+        raise Problem('UPLOAD_REJECTED', 'Only a valid text PDF is supported.')
+    subjects = []
+    try:
+        with pdfplumber.open(io.BytesIO(content)) as pdf:
+            if len(pdf.pages) > 3:
+                raise Problem('UPLOAD_REJECTED', 'PDF must have at most 3 pages.')
+            if validate_only:
+                return [], []
+            text = '\n'.join((page.extract_text() or '') for page in pdf.pages)
+            if len(text) > 100000:
+                raise Problem('UPLOAD_REJECTED', 'PDF contains too much text.')
+            has_images = any(page.images for page in pdf.pages)
+            for page in pdf.pages:
+                for table in page.extract_tables():
+                    subjects.extend(_table_rows(table))
+    except Problem:
+        raise
+    except Exception:
+        raise Problem('UPLOAD_REJECTED', 'PDF could not be read. Use manual entry.') from None
+    scanned = not text.strip()
+    if scanned:
+        text = _scan_text(content)
+    subjects.extend(_text_rows(text))
+    # A PDF can contain a selectable label or watermark while the marks are
+    # actually a scanned image. Retry OCR if the text yielded no subject rows.
+    if not subjects and has_images and not scanned:
+        subjects.extend(_text_rows(_scan_text(content)))
+        scanned = True
     # A table row may also appear in extracted text. Keep identical readings;
     # conflicting readings must be entered by the user instead of guessed.
     by_name = {}

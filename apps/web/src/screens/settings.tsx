@@ -520,11 +520,10 @@ export function PrivacyPage() {
         <section>
           <h2>Uploads have a short life</h2>
           <p>
-            PDFs are private and their raw contents are discarded after
-            extraction. Untouched uploaded contents are scheduled for removal
-            after 24 hours by the retention job. The parser ignores identifying
-            fields such as roll numbers and only accepts recognized subject
-            rows.
+            New PDFs and images are processed during upload without saving the
+            original file to the database. Extracted subject marks are saved for
+            review. Older uploads may remain until the retention job runs. The
+            parser only accepts recognized subject rows.
           </p>
         </section>
         <section>

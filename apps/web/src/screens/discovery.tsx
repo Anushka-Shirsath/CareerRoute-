@@ -112,7 +112,7 @@ function CutoffExplorer() {
   const compare = () => task.run(async () => {
     setSuggestions(await write<CutoffSuggestions>("/cutoff-recommendations", { merit_percent: Number(percentage), verified_by_student: confirmed, academic_year: year, round, stage, seat_type: seat }));
   });
-  return <section className="cutoff-explorer" aria-labelledby="cutoff-explorer-title">
+  return <section id="cutoff-explorer" className="cutoff-explorer" aria-labelledby="cutoff-explorer-title">
     <div className="cutoff-intro"><h2 id="cutoff-explorer-title">Explore by your marks</h2><p>Compare your confirmed result with published Polytechnic cutoffs from an earlier admission round.</p></div>
     {!academic ? <p>Confirm the marks read from your marksheet first. <Link href="/start">Review your marks</Link></p> : <>
       {loading && <Loading lines={2}/>}{error && <ErrorState message={error} retry={reload}/>}

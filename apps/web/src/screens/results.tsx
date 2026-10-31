@@ -639,14 +639,14 @@ export function SnapshotPage() {
         <Panel className="span-6" title="Add another part of the picture">
           <p className="muted">
             Your interests deserve a say too. Try an optional school-festival
-            mission, or go straight to the college directory.
+            mission, or compare your marks with historical college cutoffs.
           </p>
           <div className="actions section-gap">
             <ActionLink href="/compass/play" variant="primary">
               Explore my interests
             </ActionLink>
-            <ActionLink href="/colleges" variant="text">
-              Find colleges
+            <ActionLink href="/finder#cutoff-explorer" variant="text">
+              Compare marks with cutoffs
             </ActionLink>
           </div>
         </Panel>

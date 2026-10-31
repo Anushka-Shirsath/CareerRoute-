@@ -81,7 +81,7 @@ def get_offering(db, offering_id, include_cutoffs=True, category=None):
     fees = [f.data for f in db.scalars(select(Fee).where(Fee.offering_id == o.id))]
     records = cutoff_rows(db, [o.id]).get(o.id, []) if include_cutoffs else []
     facts = offering_facts(o, i, fees, records, len(records), category)
-    facts.update(local_catalogue.evidence(o.id, i.id, o.data.get('program_code'), include_cutoffs=include_cutoffs))
+    facts.update(local_catalogue.evidence(o.id, i.id, o.data.get('program_code'), include_cutoffs=include_cutoffs, session=db))
     facts['course_management_type'] = o.data.get('course_management_type')
     facts['approval_status'] = o.data.get('approval_status')
     facts['verified_fields']['course_management_type'] = fact(o.data.get('course_management_type'), o.data.get('source_id'), o.academic_year)

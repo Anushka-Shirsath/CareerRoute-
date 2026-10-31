@@ -19,7 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import SQLAlchemyError
-from pydantic import BaseModel, Field, field_validator
+from pydantic import AfterValidator, BaseModel, Field, model_validator
 from starlette.exceptions import HTTPException
 from . import catalogue, master_catalogue, local_catalogue
 from .ai.mentor import chat
@@ -30,6 +30,7 @@ from .domain.compass import current_node
 from .errors import Problem
 from .guides import guide
 from .models import AccountSession, DomainEvent, GuestSession, RateCounter, Record, Sensitive, Share, now, uid
+from .passwords import password_problem
 from .request_limits import RequestBodyLimit
 from .scan_process import scan_document
 from .schemas import (
@@ -46,17 +47,58 @@ ACCOUNT_COOKIE = 'cq_account'
 PREFIX = '/api/v1'
 
 
+def clean_email(value):
+    value = value.strip()
+    if not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+', value):
+        raise ValueError('Enter a valid email address.')
+    return value
+
+
+Email = Annotated[str, Field(min_length=3, max_length=254), AfterValidator(clean_email)]
+
+
+def checked_password(password, email=''):
+    problem = password_problem(password, email)
+    if problem:
+        raise ValueError(problem)
+    return password
+
+
 class AccountCredentials(BaseModel):
-    email: str = Field(min_length=3, max_length=254)
+    # Sign-in accepts any length older accounts may have; new passwords are
+    # checked by NewAccountCredentials and the password endpoints.
+    email: Email
     password: str = Field(min_length=8, max_length=128)
 
-    @field_validator('email')
-    @classmethod
-    def valid_email(cls, value):
-        value = value.strip()
-        if not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+', value):
-            raise ValueError('Enter a valid email address.')
-        return value
+
+class NewAccountCredentials(AccountCredentials):
+    @model_validator(mode='after')
+    def strong_password(self):
+        checked_password(self.password, self.email)
+        return self
+
+
+class PasswordRecovery(BaseModel):
+    email: Email
+
+
+class PasswordReset(BaseModel):
+    # The one-time recovery token Supabase put in the emailed link's fragment.
+    access_token: str = Field(min_length=20, max_length=4096)
+    password: str = Field(min_length=8, max_length=128)
+
+
+class PasswordChange(BaseModel):
+    email: Email
+    current_password: str = Field(min_length=8, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+
+    @model_validator(mode='after')
+    def strong_password(self):
+        checked_password(self.new_password, self.email)
+        if self.new_password == self.current_password:
+            raise ValueError('Choose a password different from your current one.')
+        return self
 
 
 class CutoffRecommendationInput(BaseModel):
@@ -108,6 +150,32 @@ def session_token(request):
     return request.cookies.get(COOKIE)
 
 
+def account_expiry(created_at, settings):
+    # expires_at holds the idle deadline; it slides with use but never passes
+    # the absolute limit counted from sign-in.
+    absolute = datetime.fromisoformat(created_at) + timedelta(days=settings.session_days)
+    return min(datetime.now(timezone.utc) + timedelta(days=settings.account_idle_days), absolute).isoformat()
+
+
+def extend_account_session(engine, settings, hashed):
+    """Slide an account session's idle deadline, in its own short transaction.
+
+    Kept apart from the request transaction so a long request (a mentor reply)
+    never holds a lock on the session row, and conditional so a session ended
+    meanwhile by sign-out or a password reset is simply left alone.
+    """
+    with transaction(engine) as db:
+        role(db, 'cq_system')
+        row = db.get(AccountSession, hashed)
+        if row is None or row.expires_at <= now():
+            return
+        expiry = account_expiry(row.created_at, settings)
+        # Write at most about once an hour per session, not on every request.
+        if datetime.fromisoformat(expiry) - datetime.fromisoformat(row.expires_at) > timedelta(hours=1):
+            db.execute(AccountSession.__table__.update().where(
+                AccountSession.token_hash == hashed, AccountSession.expires_at == row.expires_at).values(expires_at=expiry))
+
+
 def private_student(request: Request):
     account_token = request.cookies.get(ACCOUNT_COOKIE) if request.app.state.settings.auth_enabled else None
     token = account_token or session_token(request)
@@ -115,10 +183,13 @@ def private_student(request: Request):
         raise Problem('UNAUTHENTICATED', 'Start an anonymous session with POST /api/v1/session.', 401)
     if {'student_id', 'user_id'} & set(request.query_params):
         raise Problem('VALIDATION_FAILED', 'Student identity is derived from the browser session.')
+    hashed = token_hash(token, request.app.state.settings.share_token_pepper)
+    if account_token:
+        extend_account_session(request.app.state.engine, request.app.state.settings, hashed)
     with transaction(request.app.state.engine) as db:
         db.info['evidence_backend'] = request.app.state.settings.evidence_backend
         role(db, 'cq_system')
-        row = db.get(AccountSession if account_token else GuestSession, token_hash(token, request.app.state.settings.share_token_pepper))
+        row = db.get(AccountSession if account_token else GuestSession, hashed)
         if row is None or row.expires_at <= now():
             raise Problem('UNAUTHENTICATED', 'Session expired. Please refresh and sign in again.', 401)
         user_id = row.user_id
@@ -245,19 +316,29 @@ def create_app(settings=None, engine=None):
             raise Problem('FORBIDDEN', 'Demo fixture loading is disabled.', 403)
         return envelope(request, student.demo())
 
-    def auth_provider(path, payload=None, access_token=None):
+    SIGN_IN_FAILED = 'Could not sign in. Check your details or confirm your email and try again.'
+    LINK_EXPIRED = 'This reset link has expired or was already used. Ask for a new one.'
+
+    def auth_provider(path, payload=None, access_token=None, method=None, failure=SIGN_IN_FAILED):
         if not settings.supabase_url.startswith('https://') or not settings.supabase_publishable_key:
             raise Problem('AUTH_UNAVAILABLE', 'Sign-in is not configured yet. Please try again later.', 503)
         headers = {'apikey': settings.supabase_publishable_key}
         if access_token:
             headers['Authorization'] = 'Bearer ' + access_token
+        method = method or ('POST' if payload is not None else 'GET')
+        url = settings.supabase_url.rstrip('/') + '/auth/v1/' + path
         try:
             with httpx.Client(timeout=20) as client:
-                result = client.get(settings.supabase_url.rstrip('/') + '/auth/v1/' + path, headers=headers) if access_token else client.post(settings.supabase_url.rstrip('/') + '/auth/v1/' + path, headers=headers, json=payload)
+                if method == 'GET':
+                    result = client.get(url, headers=headers)
+                elif method == 'PUT':
+                    result = client.put(url, headers=headers, json=payload)
+                else:
+                    result = client.post(url, headers=headers, json=payload)
         except httpx.HTTPError:
             raise Problem('AUTH_UNAVAILABLE', 'Sign-in is temporarily unavailable. Please try again.', 503)
         if result.status_code == 429:
-            raise Problem('AUTH_RATE_LIMITED', 'Too many attempts or confirmation emails. Please try again later.', 429)
+            raise Problem('AUTH_RATE_LIMITED', 'Too many attempts or emails. Please try again later.', 429)
         if result.status_code >= 500:
             raise Problem('AUTH_UNAVAILABLE', 'Sign-in is temporarily unavailable. Please try again later.', 503)
         if not result.is_success:
@@ -266,26 +347,66 @@ def create_app(settings=None, engine=None):
             except (ValueError, AttributeError):
                 code = None
             if code == 'email_address_not_authorized':
-                raise Problem('AUTH_EMAIL_UNAVAILABLE', 'This project cannot send confirmation to that address yet. Please ask the site owner to configure email delivery.', 503)
-            raise Problem('AUTH_FAILED', 'Could not sign in. Check your details or confirm your email and try again.', 401)
+                raise Problem('AUTH_EMAIL_UNAVAILABLE', 'This project cannot send email to that address yet. Please ask the site owner to configure email delivery.', 503)
+            if code == 'weak_password':
+                raise Problem('VALIDATION_FAILED', 'This password is too weak or has appeared in a data breach. Choose another.')
+            if code == 'same_password':
+                raise Problem('VALIDATION_FAILED', 'Choose a password different from your current one.')
+            if code == 'email_not_confirmed':
+                # Supabase reports this only after the password matched.
+                raise Problem('AUTH_UNCONFIRMED', 'Confirm your email address using the link we sent, then sign in.', 401)
+            raise Problem('AUTH_FAILED', failure, 401)
+        if result.status_code == 204:
+            return {}
         try:
             return result.json()
         except ValueError:
             raise Problem('AUTH_UNAVAILABLE', 'Sign-in is temporarily unavailable. Please try again.', 503)
 
-    def issue_account_session(request, response, access_token):
-        # Never trust the user object returned by a client; ask Supabase to
-        # validate the freshly issued access token before choosing an owner.
-        user = auth_provider('user', access_token=access_token)
+    def audit(request, event, outcome):
+        # Security events without email addresses, passwords or tokens.
+        logger.info(json.dumps({'request_id': request.state.request_id, 'auth_event': event, 'outcome': outcome}))
+
+    def verified_owner(access_token, failure=SIGN_IN_FAILED):
+        # Never trust a user object supplied alongside a token; ask Supabase
+        # to validate the token before choosing an owner.
+        user = auth_provider('user', access_token=access_token, failure=failure)
         try:
-            owner = str(uuid.UUID(user['id']))
+            return str(uuid.UUID(user['id'])), user.get('email') or ''
         except (KeyError, ValueError, TypeError):
             raise Problem('AUTH_UNAVAILABLE', 'Sign-in is temporarily unavailable. Please try again.', 503)
-        token = secrets.token_urlsafe(32)
-        expires = (datetime.now(timezone.utc) + timedelta(days=settings.session_days)).isoformat()
+
+    def current_account(request):
+        token = request.cookies.get(ACCOUNT_COOKIE) if settings.auth_enabled else None
+        if not token or len(token) > 100:
+            return None
         with transaction(engine) as db:
             role(db, 'cq_system')
-            db.add(AccountSession(token_hash=token_hash(token, settings.share_token_pepper), user_id=owner, expires_at=expires))
+            row = db.get(AccountSession, token_hash(token, settings.share_token_pepper))
+            return row if row and row.expires_at > now() else None
+
+    def require_account(request):
+        if not settings.auth_enabled:
+            raise Problem('NOT_FOUND', 'Account sign-in is disabled in demo mode.', 404)
+        account = current_account(request)
+        if account is None:
+            raise Problem('UNAUTHENTICATED', 'Sign in to your account first.', 401)
+        return account
+
+    def issue_account_session(request, response, owner, revoke_all=False):
+        token = secrets.token_urlsafe(32)
+        created = now()
+        old = request.cookies.get(ACCOUNT_COOKIE)
+        with transaction(engine) as db:
+            role(db, 'cq_system')
+            if revoke_all:
+                db.execute(delete(AccountSession).where(AccountSession.user_id == owner))
+            elif old and len(old) <= 100:
+                # Rotate: the browser's previous account session never outlives a new sign-in.
+                db.execute(delete(AccountSession).where(AccountSession.token_hash == token_hash(old, settings.share_token_pepper)))
+            db.add(AccountSession(token_hash=token_hash(token, settings.share_token_pepper), user_id=owner,
+                                  created_at=created, expires_at=account_expiry(created, settings)))
+        # The browser keeps the cookie up to the absolute limit; the server enforces the idle limit.
         response.set_cookie(ACCOUNT_COOKIE, token, max_age=settings.session_days * 86400, secure=settings.cookie_secure, httponly=True, samesite='strict', path='/')
 
     def limit_auth(request, resource):
@@ -294,40 +415,189 @@ def create_app(settings=None, engine=None):
             role(db, 'cq_system')
             consume(db, hashlib.sha256(client_ip.encode()).hexdigest(), resource, 30, 'hour', 'AUTH_RATE_LIMITED')
 
-    @app.post(PREFIX + '/auth/signup', response_model=Envelope, tags=['Authentication'])
-    def sign_up(value: AccountCredentials, request: Request, response: Response):
+    def email_key(email):
+        # Keyed so the counter table never holds a guessable hash of an address.
+        return hmac.new(settings.share_token_pepper.encode(), email.strip().lower().encode(), hashlib.sha256).hexdigest()
+
+    def recent_buckets(resource):
+        instant = datetime.now(timezone.utc)
+        return [resource + ':' + (instant - timedelta(hours=back)).strftime('%Y-%m-%dT%H') for back in (0, 1)]
+
+    LOCKED = 'Too many unsuccessful sign-ins for this account. Try again later, or reset your password.'
+
+    def reserve_attempt(request, email):
+        """Count a sign-in attempt as failed before it is made.
+
+        The counter is reserved up front, atomically, so parallel guesses cannot
+        all slip past the limit while Supabase answers. Success clears it and
+        outcomes that were not wrong passwords hand the reservation back.
+        """
+        key = email_key(email)
+        with transaction(engine) as db:
+            role(db, 'cq_system')
+            earlier = db.scalar(select(func.coalesce(func.sum(RateCounter.count), 0)).where(
+                RateCounter.user_id == key, RateCounter.bucket == recent_buckets('login-failures')[1]))
+            try:
+                if earlier >= settings.login_failures_per_hour:
+                    raise Problem('AUTH_LOCKED', LOCKED, 429)
+                # Failures from the previous hour still count, so the window is a rolling hour or more.
+                consume(db, key, 'login-failures', settings.login_failures_per_hour - earlier, 'hour', 'AUTH_LOCKED')
+            except Problem:
+                audit(request, 'login', 'locked')
+                raise Problem('AUTH_LOCKED', LOCKED, 429)
+
+    def release_attempt(email):
+        with transaction(engine) as db:
+            role(db, 'cq_system')
+            db.execute(RateCounter.__table__.update().where(
+                RateCounter.user_id == email_key(email), RateCounter.bucket == recent_buckets('login-failures')[0],
+                RateCounter.count > 0).values(count=RateCounter.count - 1))
+
+    def clear_failures(email):
+        with transaction(engine) as db:
+            role(db, 'cq_system')
+            db.execute(delete(RateCounter).where(RateCounter.user_id == email_key(email), RateCounter.bucket.like('login-failures:%')))
+
+    def password_grant(request, email, password):
+        """Check an email and password with Supabase, with per-account lockout."""
+        reserve_attempt(request, email)
+        try:
+            result = auth_provider('token?grant_type=password', {'email': email, 'password': password})
+            if not result.get('access_token'):
+                raise Problem('AUTH_FAILED', SIGN_IN_FAILED, 401)
+        except Problem as problem:
+            if problem.code == 'AUTH_FAILED':
+                audit(request, 'password_check', 'failed')
+            else:
+                release_attempt(email)
+            raise
+        clear_failures(email)
+        return result['access_token']
+
+    def end_provider_sessions(access_token):
+        # Best effort: also revoke Supabase refresh tokens, so a leaked one
+        # cannot mint new access tokens after a password change.
+        try:
+            auth_provider('logout?scope=global', {}, access_token=access_token)
+        except Problem:
+            logger.warning('Supabase global logout failed after a password update.')
+
+    def token_claims(access_token):
+        # Read only after Supabase has verified this exact token.
+        try:
+            payload = access_token.split('.')[1]
+            return json.loads(base64.urlsafe_b64decode(payload + '=' * (-len(payload) % 4)))
+        except (IndexError, ValueError):
+            return {}
+
+    def require_auth_enabled():
         if not settings.auth_enabled:
             raise Problem('NOT_FOUND', 'Account sign-in is disabled in demo mode.', 404)
+
+    @app.post(PREFIX + '/auth/signup', response_model=Envelope, tags=['Authentication'])
+    def sign_up(value: NewAccountCredentials, request: Request, response: Response):
+        require_auth_enabled()
         limit_auth(request, 'signup')
         redirect = settings.public_api_origin.rstrip('/') + '/login'
         result = auth_provider('signup?redirect_to=' + quote(redirect, safe=''), {'email': value.email, 'password': value.password})
+        audit(request, 'signup', 'requested')
         if result.get('access_token'):
-            issue_account_session(request, response, result['access_token'])
+            owner, _ = verified_owner(result['access_token'])
+            issue_account_session(request, response, owner)
             return envelope(request, {'signed_in': True})
         return envelope(request, {'signed_in': False, 'message': 'If this address can be registered, check your email to confirm your account, then sign in.'})
 
     @app.post(PREFIX + '/auth/login', response_model=Envelope, tags=['Authentication'])
     def sign_in(value: AccountCredentials, request: Request, response: Response):
-        if not settings.auth_enabled:
-            raise Problem('NOT_FOUND', 'Account sign-in is disabled in demo mode.', 404)
+        require_auth_enabled()
         limit_auth(request, 'login')
-        result = auth_provider('token?grant_type=password', {'email': value.email, 'password': value.password})
-        if not result.get('access_token'):
-            raise Problem('AUTH_FAILED', 'Could not sign in. Check your details or confirm your email and try again.', 401)
-        issue_account_session(request, response, result['access_token'])
+        owner, _ = verified_owner(password_grant(request, value.email, value.password))
+        issue_account_session(request, response, owner)
+        audit(request, 'login', 'succeeded')
         return envelope(request, {'signed_in': True})
+
+    @app.post(PREFIX + '/auth/password/forgot', response_model=Envelope, tags=['Authentication'])
+    def forgot_password(value: PasswordRecovery, request: Request):
+        require_auth_enabled()
+        limit_auth(request, 'recover')
+        message = {'sent': True, 'message': 'If an account uses this address, a reset link is on its way. It works once and expires soon.'}
+        with transaction(engine) as db:
+            role(db, 'cq_system')
+            try:
+                # A few emails per address per hour; beyond that, answer the same way but send nothing.
+                consume(db, email_key(value.email), 'recover-email', 3, 'hour', 'AUTH_RATE_LIMITED')
+            except Problem:
+                audit(request, 'password_forgot', 'throttled')
+                return envelope(request, message)
+        redirect = settings.public_api_origin.rstrip('/') + '/login'
+        try:
+            auth_provider('recover?redirect_to=' + quote(redirect, safe=''), {'email': value.email})
+        except Problem as problem:
+            # Supabase answers known and unknown addresses differently in some
+            # cases (resend throttles, unauthorised addresses). Only a real outage
+            # is reported; everything else gets the same reply.
+            if problem.code == 'AUTH_UNAVAILABLE':
+                raise
+            audit(request, 'password_forgot', problem.code.lower())
+            return envelope(request, message)
+        audit(request, 'password_forgot', 'requested')
+        return envelope(request, message)
+
+    @app.post(PREFIX + '/auth/password/reset', response_model=Envelope, tags=['Authentication'])
+    def reset_password(value: PasswordReset, request: Request, response: Response):
+        require_auth_enabled()
+        limit_auth(request, 'reset')
+        owner, email = verified_owner(value.access_token, failure=LINK_EXPIRED)
+        claims = token_claims(value.access_token)
+        # Only a token from a password-recovery email may set a password here.
+        if not any(isinstance(m, dict) and m.get('method') == 'recovery' for m in claims.get('amr') or []):
+            audit(request, 'password_reset', 'not_recovery_token')
+            raise Problem('AUTH_FAILED', LINK_EXPIRED, 401)
+        problem = password_problem(value.password, email)
+        if problem:
+            raise Problem('VALIDATION_FAILED', problem, fields=[{'path': 'password', 'message': problem}])
+        # Make each link single-use: mark it before the update, atomically.
+        used = hmac.new(settings.share_token_pepper.encode(), str(claims.get('session_id') or value.access_token).encode(), hashlib.sha256).hexdigest()
+        with transaction(engine) as db:
+            role(db, 'cq_system')
+            seen = db.scalar(select(RateCounter.bucket).where(RateCounter.user_id == used, RateCounter.bucket.like('recovery-used:%')).limit(1))
+            try:
+                if seen:
+                    raise Problem('AUTH_FAILED', LINK_EXPIRED, 401)
+                consume(db, used, 'recovery-used', 1, 'day', 'AUTH_FAILED')
+            except Problem:
+                audit(request, 'password_reset', 'link_reused')
+                raise Problem('AUTH_FAILED', LINK_EXPIRED, 401)
+        auth_provider('user', {'password': value.password}, access_token=value.access_token, method='PUT', failure=LINK_EXPIRED)
+        end_provider_sessions(value.access_token)
+        if email:
+            clear_failures(email)
+        # A reset means the old password may be known to someone else: end every session.
+        issue_account_session(request, response, owner, revoke_all=True)
+        audit(request, 'password_reset', 'succeeded')
+        return envelope(request, {'signed_in': True})
+
+    @app.post(PREFIX + '/auth/password/change', response_model=Envelope, tags=['Authentication'])
+    def change_password(value: PasswordChange, request: Request, response: Response):
+        account = require_account(request)
+        limit_auth(request, 'change-password')
+        access_token = password_grant(request, value.email, value.current_password)
+        owner, _ = verified_owner(access_token)
+        if owner != account.user_id:
+            audit(request, 'password_change', 'wrong_account')
+            raise Problem('AUTH_FAILED', 'Those details belong to a different account.', 403)
+        auth_provider('user', {'password': value.new_password}, access_token=access_token, method='PUT')
+        end_provider_sessions(access_token)
+        issue_account_session(request, response, owner, revoke_all=True)
+        audit(request, 'password_change', 'succeeded')
+        return envelope(request, {'signed_in': True, 'message': 'Password changed. Other devices have been signed out.'})
 
     @app.get(PREFIX + '/auth/status', response_model=Envelope, tags=['Authentication'])
     def auth_status(request: Request):
-        if not settings.auth_enabled:
-            return envelope(request, {'signed_in': False})
-        token = request.cookies.get(ACCOUNT_COOKIE)
-        if not token or len(token) > 100:
-            return envelope(request, {'signed_in': False})
-        with transaction(engine) as db:
-            role(db, 'cq_system')
-            row = db.get(AccountSession, token_hash(token, settings.share_token_pepper))
-            return envelope(request, {'signed_in': bool(row and row.expires_at > now())})
+        account = current_account(request)
+        return envelope(request, {'enabled': settings.auth_enabled, 'signed_in': account is not None,
+                                  **({'expires_at': account.expires_at, 'session_days': settings.session_days,
+                                      'idle_days': settings.account_idle_days} if account else {})})
 
     @app.post(PREFIX + '/auth/logout', response_model=Envelope, tags=['Authentication'])
     def sign_out(request: Request, response: Response):
@@ -337,7 +607,18 @@ def create_app(settings=None, engine=None):
                 role(db, 'cq_system')
                 db.execute(delete(AccountSession).where(AccountSession.token_hash == token_hash(token, settings.share_token_pepper)))
         response.delete_cookie(ACCOUNT_COOKIE, path='/')
+        audit(request, 'logout', 'succeeded')
         return envelope(request, {'signed_in': False})
+
+    @app.post(PREFIX + '/auth/logout-all', response_model=Envelope, tags=['Authentication'])
+    def sign_out_everywhere(request: Request, response: Response):
+        account = require_account(request)
+        with transaction(engine) as db:
+            role(db, 'cq_system')
+            ended = db.execute(delete(AccountSession).where(AccountSession.user_id == account.user_id)).rowcount
+        response.delete_cookie(ACCOUNT_COOKIE, path='/')
+        audit(request, 'logout_all', 'succeeded')
+        return envelope(request, {'signed_in': False, 'sessions_ended': ended})
 
     @app.get(PREFIX + '/me/profile', response_model=Envelope, tags=['Workspace'])
     def profile(request: Request, student: StudentDep):

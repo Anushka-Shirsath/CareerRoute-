@@ -14,6 +14,11 @@ class Settings(BaseSettings):
     public_api_origin: str = 'http://127.0.0.1:8000'
     cookie_secure: bool = False
     session_days: int = 30
+    # Account sessions also end after this many days without use, never later
+    # than session_days after sign-in.
+    account_idle_days: int = Field(default=14, ge=1, le=30)
+    # Failed sign-ins allowed per email address per hour before it is paused.
+    login_failures_per_hour: int = Field(default=8, ge=3, le=50)
     share_token_pepper: str = ''
     mentor_enabled: bool = True
     groq_api_key: str = ''

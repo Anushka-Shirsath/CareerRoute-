@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { Shell } from "./shell";
 import { ActionLink, Empty, PageHeader, Panel } from "./ui";
 import { HomePage } from "./screens/home";
+import { LoginPage, takeLoginFragment } from "./screens/login";
 import { MarksPage, SnapshotPage } from "./screens/results";
 import { ExplorePage, PathwayPage } from "./screens/explore";
 import { CompassPlayPage, CompassReportPage } from "./screens/compass";
@@ -12,6 +13,20 @@ import { ComparePage, ShortlistPage } from "./screens/planning";
 import { MentorPage } from "./screens/mentor";
 import { ReportBuilderPage, SharedReportPage } from "./screens/reports";
 import { CoveragePage, PrivacyPage, SettingsPage } from "./screens/settings";
+import { useData } from "./context";
+import type { AuthStatus } from "./types";
+
+// Accounts are a server setting. Guest-only builds keep /login on the demo home.
+function LoginRoute() {
+  // Read and strip any email-link fragment before anything else can fail.
+  const [fragment, setFragment] = useState<string | null>(null);
+  useEffect(() => setFragment(takeLoginFragment()), []);
+  const status = useData<AuthStatus>("/auth/status");
+  if (status.loading || fragment === null) return null;
+  if (status.data?.enabled)
+    return <LoginPage signedIn={status.data.signed_in} fragment={fragment} />;
+  return <Shell><HomePage /></Shell>;
+}
 
 function Screens() {
   const path = usePathname();
@@ -35,7 +50,8 @@ function Screens() {
   }
   if (parts[0] === "r" && parts[1])
     return <SharedReportPage token={parts[1]} />;
-  if (path === "/" || path === "/dashboard" || path === "/login") screen = <HomePage />;
+  if (path === "/login") return <LoginRoute />;
+  if (path === "/" || path === "/dashboard") screen = <HomePage />;
   else if (path === "/start") screen = <MarksPage key="entry" />;
   else if (path === "/start/review") screen = <MarksPage review key="review" />;
   else if (path === "/snapshot") screen = <SnapshotPage />;

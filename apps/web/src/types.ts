@@ -196,3 +196,11 @@ export type Stats = {
   historical_records: number;
   districts: number;
 };
+
+export type AuthStatus = {
+  enabled: boolean;
+  signed_in: boolean;
+  expires_at?: string;
+  session_days?: number;
+  idle_days?: number;
+};

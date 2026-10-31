@@ -17,7 +17,8 @@ import {
   TextLink,
   Toggle,
 } from "../ui";
-import type { Coverage, Memory, Page } from "../types";
+import type { AuthStatus, Coverage, Memory, Page } from "../types";
+import { PASSWORD_HINT } from "./login";
 
 function memoryText(memory: Memory) {
   if (memory.kind === "preference") {
@@ -39,6 +40,84 @@ function memoryText(memory: Memory) {
   }
   return memory.content.replaceAll("SSC_MH", "Maharashtra SSC");
 }
+function AccountSection() {
+  const status = useData<AuthStatus>("/auth/status");
+  const task = useTask();
+  const [email, setEmail] = useState(""),
+    [current, setCurrent] = useState(""),
+    [next, setNext] = useState(""),
+    [done, setDone] = useState("");
+  if (!status.data?.enabled) return null;
+  const leave = (path: string) =>
+    task.run(async () => {
+      await write(path);
+      window.location.assign("/");
+    });
+  const change = (event: React.FormEvent) => {
+    event.preventDefault();
+    setDone("");
+    task.run(async () => {
+      const result = await write<{ message: string }>("/auth/password/change", {
+        email,
+        current_password: current,
+        new_password: next,
+      });
+      setCurrent("");
+      setNext("");
+      setDone(result.message);
+    });
+  };
+  return (
+    <section className="settings-section">
+      <div className="settings-label">
+        <h2>Your account</h2>
+        <p>
+          {status.data.signed_in
+            ? `You stay signed in for up to ${status.data.session_days} days, or until ${status.data.idle_days} days pass without a visit.`
+            : "Sign in to keep your work across devices. Your guest workspace stays separate."}
+        </p>
+      </div>
+      <Panel>
+        {!status.data.signed_in ? (
+          <ActionLink href="/login" variant="primary">
+            Sign in or create an account
+          </ActionLink>
+        ) : (
+          <>
+            <div className="actions spaced">
+              <Button variant="secondary" busy={task.busy} onClick={() => leave("/auth/logout")}>
+                Sign out
+              </Button>
+              <Button variant="text" disabled={task.busy} onClick={() => leave("/auth/logout-all")}>
+                Sign out of all devices
+              </Button>
+            </div>
+            <form className="section-gap" onSubmit={change} aria-labelledby="change-password-heading">
+              <h3 id="change-password-heading">Change password</h3>
+              <div className="form-grid section-gap">
+              <Field label="Email address" className="wide">
+                <input type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={254} required />
+              </Field>
+              <Field label="Current password">
+                <input type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} minLength={8} maxLength={128} required />
+              </Field>
+              <Field label="New password" hint={PASSWORD_HINT + " Other devices will be signed out."}>
+                <input type="password" autoComplete="new-password" value={next} onChange={(e) => setNext(e.target.value)} minLength={10} maxLength={128} required />
+              </Field>
+              </div>
+              <div className="actions section-gap">
+                <Button type="submit" busy={task.busy}>Change password</Button>
+              </div>
+            </form>
+          </>
+        )}
+        {task.error && <ErrorState message={task.error} />}
+        {done && <Notice icon="check">{done}</Notice>}
+      </Panel>
+    </section>
+  );
+}
+
 export function SettingsPage() {
   const ws = useWorkspace(),
     task = useTask(),
@@ -78,6 +157,7 @@ export function SettingsPage() {
         title="Your information, your say"
         description="Review what’s saved, change what matters, and remove what you no longer want to keep."
       />
+      <AccountSection />
       <section className="settings-section">
         <div className="settings-label">
           <h2>Your workspace</h2>

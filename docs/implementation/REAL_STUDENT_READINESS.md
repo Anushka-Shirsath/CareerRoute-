@@ -19,14 +19,19 @@ Before enabling real-student collection:
   isolation, recovery, rate limits and a monitored retention job in the actual
   deployment. Verify the database's backup retention and restore procedures.
 - Rotate any database and Groq credentials exposed during development. The
-  mentor sends student workspace context, including marks, to Groq when enabled;
-  leave it disabled for real data until disclosure, authorization, data
-  minimization and provider terms have been addressed.
-- Review the document parser isolation against the actual hosting environment.
-  The worker has time and CPU limits and a Linux address-space limit, but it is
-  not a complete operating-system sandbox, and Windows and macOS do not get the
-  Linux address-space limit. Apply and test ingress, resource, filesystem and
-  network restrictions for the deployed worker.
+  mentor now requires an explicit opt-in before any Groq call; it can still send
+  saved marks and conversation context when opted in. Verify the disclosure,
+  data minimization and provider terms for the intended users before launch.
+- Build the scanner with `docker build -f services/api/Dockerfile.scanner -t
+  careerquest-scanner:local services/api` and set `SCANNER_BACKEND=docker`.
+  Non-demo and non-development configurations refuse the local process backend. Each scan uses a
+  non-root, read-only, network-isolated container with resource limits and no
+  host mounts. Confirm these restrictions work on the actual hosting platform,
+  including cancellation and cleanup; the container runtime is a separate
+  privileged dependency and needs its own access controls and monitoring.
+  The Docker-backed scanner requires a Docker daemon and is not supported by a
+  Vercel Function as currently implemented. Do not deploy the API to Vercel
+  until an independently isolated scanner service is provided and tested.
 - Test representative real-world document layouts with appropriately authorized
   samples. OCR is fallible. Students must review extracted subject marks and
   confirm the merit percentage, admission round and seat type; historical

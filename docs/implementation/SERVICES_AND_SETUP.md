@@ -58,25 +58,29 @@ The local PostgreSQL dataset measured about 263 MiB after the supplementary extr
 
 ## 3. Deploy the API
 
-Create a personal Hobby project from the repository and set its root directory to `services/api`. Configure:
+The previously documented Vercel Function deployment cannot run the required
+isolated Docker scanner. It is not a supported real-student deployment. Use a
+host with a controlled Docker runtime, or implement and independently verify an
+isolated scanner service before deploying to a serverless platform. Configure:
 
 ```dotenv
 ENVIRONMENT=production
 DATABASE_URL=<restricted cq_api pooler URI with sslmode=require>
 COOKIE_SECURE=true
 SHARE_TOKEN_PEPPER=<random secret of at least 32 characters>
-PUBLIC_API_ORIGIN=https://YOUR-API.vercel.app
+PUBLIC_API_ORIGIN=https://YOUR-API.example
 ALLOWED_ORIGINS=https://YOUR-FUTURE-WEBSITE.example
 DEMO_MODE=true
 MENTOR_ENABLED=true
 GROQ_API_KEY=<optional server key>
 GROQ_CHAT_MODEL=openai/gpt-oss-120b
 MAX_UPLOAD_BYTES=4194304
+SCANNER_BACKEND=docker
 ```
 
 Keep the API and future website on the same site, preferably through an `/api/v1` reverse proxy. Anonymous cookies are intentionally `SameSite=Strict`; independent unrelated website/API domains are not a supported cookie deployment. If using a proxy, set `PUBLIC_API_ORIGIN` to the browser-visible same-origin host.
 
-Vercel functions have a 4.5 MB request/response payload ceiling. The hosted 4 MiB upload setting stays below it; local mode supports up to 5 MiB. PDF contents are temporary, and manual result entry always works. Never enable unrestricted request-URL access logs: upload and share URLs carry bearer tokens. The supplied startup command disables Uvicorn access logs; the application emits redacted route templates.
+New PDF and image contents are processed during upload without saving the original file in the application database. Never enable unrestricted request-URL access logs: upload and share URLs carry bearer tokens. The supplied startup command disables Uvicorn access logs; the application emits redacted route templates.
 
 Run `/health`, the backend demo through `/docs`, and actual mentor evaluation after deployment. A configured deployment file is not evidence of a live deployment.
 

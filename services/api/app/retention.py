@@ -15,8 +15,9 @@ def cleanup(engine):
         db.execute(delete(AccountSession).where(AccountSession.expires_at <= now()))
         removed = 0
         for row in db.scalars(select(Record).where(Record.kind == 'document')):
-            if row.data.get('delete_after', '') <= now() and row.data.get('content'):
-                row.data = {**row.data, 'content': None, 'purged_at': now()}
+            if row.data.get('delete_after', '') <= now() and (row.data.get('content') or row.data.get('extracted_subjects')):
+                row.data = {**row.data, 'content': None, 'extracted_subjects': None,
+                            'extraction_warnings': None, 'purged_at': now()}
                 removed += 1
         cutoff = (datetime.now(timezone.utc) - timedelta(days=2)).strftime('%Y-%m-%d')
         for row in db.scalars(select(RateCounter)):

@@ -17,6 +17,7 @@
 .mentor-widget-message button { margin-top: 8px; }
 .mentor-widget-status, .mentor-widget-error { font-size: 13px; color: #4d5863; }
 .mentor-widget-error { color: #a02338; }
+.mentor-widget-consent { padding: 0 14px; }
 .mentor-widget-form { display: flex; gap: 8px; padding: 10px 14px; border-top: 1px solid #e8eaed; }
 .mentor-widget-form textarea { resize: none; flex: 1; min-width: 0; border: 1px solid #d5dce0; border-radius: 10px; padding: 10px; font: inherit; font-size: 14px; }
 .mentor-widget-form button { width: 42px; border: 0; border-radius: 10px; background: #20242c; color: white; display: grid; place-items: center; cursor: pointer; }

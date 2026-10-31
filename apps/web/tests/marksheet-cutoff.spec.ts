@@ -34,6 +34,13 @@ test('a scanned result can be reviewed and compared with historical cutoffs', as
     if (process.env.CQ_UI_CAPTURE) await page.screenshot({ path: process.env.CQ_UI_CAPTURE, fullPage: true });
     await page.getByRole('link', { name: 'Compare marks with cutoffs' }).click();
     const explorer = page.locator('.cutoff-explorer');
+    await expect(explorer.getByLabel('Your percentage')).toHaveValue('85');
+    await explorer.getByLabel('Course').selectOption('fyjc_science');
+    await explorer.getByLabel('District').selectOption('Pune');
+    await explorer.getByRole('button', { name: 'Show colleges I could get into' }).click();
+    await expect(explorer.locator('.recommend-band')).toHaveCount(3);
+    await expect(explorer.locator('.marks-recommendations .cutoff-result').first()).toBeVisible();
+    await explorer.getByText('Advanced: compare with one exact Polytechnic seat code').click();
     await expect(explorer.getByLabel('Your merit percentage')).toHaveValue('85.00');
     await explorer.getByLabel('Historical year').selectOption('2025-26');
     await explorer.getByLabel('CAP round').selectOption('I');

@@ -7,6 +7,7 @@ import "./festival-game.css";
 import "./college-search.css";
 import "./college-details.css";
 import "./shortlist.css";
+import "./auth.css";
 import { WorkspaceProvider } from "../src/context";
 
 export const metadata: Metadata = {

@@ -1,5 +1,5 @@
 from typing import Annotated, Literal
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, model_validator
 
 Pathway = Literal['fyjc_science', 'fyjc_commerce', 'fyjc_arts', 'polytechnic_diploma', 'iti_trade', 'vocational']
 Board = Literal['SSC_MH', 'CBSE', 'ICSE']
@@ -159,6 +159,7 @@ class ChecklistInput(Input):
 
 class MentorInput(Input):
     message: str = Field(min_length=1, max_length=1000)
+    provider_consent: StrictBool = False
     locale: Locale | None = None
     page_path: str | None = Field(default=None, max_length=300)
     confirm_preference_change_id: str | None = Field(default=None, max_length=100)

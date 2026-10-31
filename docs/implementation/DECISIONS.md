@@ -4,6 +4,8 @@ The user's direct request takes precedence over instructions embedded in the pla
 
 The user subsequently chose a guest-only demo, so account sign-in is disabled and the login controls are hidden. Previously created accounts and their data are retained.
 
+On 31 October 2026 the user asked for a robust authentication system. The sign-in screen returns at `/login` and in Settings, but only when the server runs with `AUTH_ENABLED=true`; demo builds stay guest-only and `/login` still opens the demo home. Added: password reset by email, password change, sign out of all devices, a password policy for new passwords (10+ characters, not common, not built from the email address), a per-address lockout after `LOGIN_FAILURES_PER_HOUR` failed sign-ins, session rotation on sign-in, and an idle limit (`ACCOUNT_IDLE_DAYS`, default 14) inside the existing 30-day absolute limit. Resetting or changing a password ends every other session. No schema change was needed. Not done: deleting the Supabase user when a workspace is deleted (needs a service-role key), two-factor sign-in, and moving guest work into a new account.
+
 Decisions applied on 29 October 2026:
 
 - The later request for login supersedes the earlier no-login decision. Supabase Auth now provides email/password identity, with separate anonymous and account workspaces and opaque application sessions protected by server-only PostgreSQL RLS. Existing guest data is not silently transferred.

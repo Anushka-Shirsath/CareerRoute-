@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Literal
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -13,6 +14,11 @@ class Settings(BaseSettings):
     public_api_origin: str = 'http://127.0.0.1:8000'
     cookie_secure: bool = False
     session_days: int = 30
+    # Account sessions also end after this many days without use, never later
+    # than session_days after sign-in.
+    account_idle_days: int = Field(default=14, ge=1, le=30)
+    # Failed sign-ins allowed per email address per hour before it is paused.
+    login_failures_per_hour: int = Field(default=8, ge=3, le=50)
     share_token_pepper: str = ''
     mentor_enabled: bool = True
     groq_api_key: str = ''
@@ -21,11 +27,16 @@ class Settings(BaseSettings):
     auth_enabled: bool = False
     master_enabled: bool = False
     evidence_backend: Literal['local', 'postgres'] = 'local'
+    scanner_backend: Literal['process', 'docker'] = 'process'
+    scanner_image: str = Field(default='careerquest-scanner:local', min_length=1, max_length=200,
+                               pattern=r'^[A-Za-z0-9][A-Za-z0-9._/:@-]*$')
     supabase_url: str = ''
     supabase_publishable_key: str = ''
     max_upload_bytes: int = 5 * 1024 * 1024
 
     def validate_production(self):
+        if self.scanner_backend != 'docker' and (self.environment != 'development' or not self.demo_mode):
+            raise ValueError('Non-demo deployments require the isolated Docker scanner.')
         if self.environment == 'production':
             if not self.cookie_secure or len(self.share_token_pepper) < 32:
                 raise ValueError('Production needs COOKIE_SECURE=true and SHARE_TOKEN_PEPPER (32+ chars).')

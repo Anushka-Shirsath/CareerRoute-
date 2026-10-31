@@ -4,27 +4,29 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { api, write, errorText } from "./api";
 import { useWorkspace } from "./context";
-import { Icon, SourceLink } from "./ui";
+import { CheckField, Icon, SourceLink } from "./ui";
 import type { ChatMessage, Page } from "./types";
 
 export function MentorWidget() {
   const path = usePathname(), ws = useWorkspace();
   const [open, setOpen] = useState(false), [messages, setMessages] = useState<ChatMessage[]>([]),
-    [text, setText] = useState(""), [busy, setBusy] = useState(false), [error, setError] = useState("");
+    [text, setText] = useState(""), [busy, setBusy] = useState(false), [error, setError] = useState(""),
+    [providerConsent, setProviderConsent] = useState(false);
   const loaded = useRef(false), end = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open || loaded.current || !ws.ready || ws.error) return;
     loaded.current = true;
-    api<Page<ChatMessage>>("/mentor/messages?limit=30").then((data) => setMessages(data.items)).catch(() => { loaded.current = false; });
+    api<Page<ChatMessage>>("/mentor/messages?limit=30").then((data) => setMessages((current) => current.length ? current : data.items)).catch(() => { loaded.current = false; });
   }, [open, ws.ready, ws.error]);
   useEffect(() => { if (open) end.current?.scrollIntoView({ block: "nearest" }); }, [messages, busy, open]);
   if (path === "/mentor" || !ws.ready || ws.deleted || ws.error || !ws.dashboard) return null;
   async function send(message: string, proposalId?: string) {
     if (!message.trim() || busy) return;
+    if (!proposalId && !providerConsent) { setError("Please choose whether to share your information with Groq before sending."); return; }
     setBusy(true); setError(""); setText("");
     setMessages((old) => [...old, { role: "user", content: message.trim() }]);
     try {
-      const result = await write<ChatMessage & { reply: string }>("/mentor/chat", { message: message.trim(), locale: "en", page_path: path, ...(proposalId ? { confirm_preference_change_id: proposalId } : {}) });
+      const result = await write<ChatMessage & { reply: string }>("/mentor/chat", { message: message.trim(), locale: "en", page_path: path, provider_consent: providerConsent, ...(proposalId ? { confirm_preference_change_id: proposalId } : {}) });
       setMessages((old) => [...old, { ...result, role: "assistant", content: result.reply }]);
       if (proposalId) await ws.refresh();
     } catch (e) { setError(errorText(e)); setText(message); }
@@ -44,11 +46,12 @@ export function MentorWidget() {
         {busy && <p className="mentor-widget-status" role="status">Checking your information…</p>}
         {error && <p className="mentor-widget-error" role="alert">{error}</p>}<div ref={end} />
       </div>
+      <div className="mentor-widget-consent"><CheckField label="I agree to share with Groq" description="Your message, recent chat and saved details, including marks, may be sent to Groq." checked={providerConsent} onChange={setProviderConsent} /></div>
       <form className="mentor-widget-form" onSubmit={(event) => { event.preventDefault(); send(text); }}>
         <textarea aria-label="Message to the career mentor" placeholder="Ask about this page…" rows={2} maxLength={1000} value={text} onChange={e => setText(e.target.value)} />
-        <button type="submit" aria-label="Send mentor message" disabled={busy || !text.trim()}><Icon name="send" size={18} /></button>
+        <button type="submit" aria-label="Send mentor message" disabled={busy || !text.trim() || !providerConsent}><Icon name="send" size={18} /></button>
       </form>
-      <div className="mentor-widget-footer"><span>Questions and relevant saved details are sent to Groq. Check sources.</span><Link href="/mentor">Full conversation ↗</Link></div>
+      <div className="mentor-widget-footer"><span>Check sources before deciding.</span><Link href="/mentor">Full conversation ↗</Link></div>
     </section>}
     <button className="mentor-widget-trigger" type="button" aria-expanded={open} onClick={() => setOpen(!open)}><Icon name={open ? "close" : "chat"} size={19} />{open ? "Close" : "Ask mentor"}</button>
   </div>;

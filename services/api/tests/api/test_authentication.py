@@ -79,3 +79,11 @@ def test_demo_mode_disables_account_signin(engine):
         assert client.post('/api/v1/auth/signup', json={'email': 'first@example.com', 'password': 'correct-password'}).status_code == 404
         assert client.get('/api/v1/auth/status').json()['data']['signed_in'] is False
         assert client.post('/api/v1/session').json()['data']['session'] == 'created'
+
+
+def test_non_demo_session_does_not_offer_synthetic_fixture(engine):
+    app = create_app(Settings(share_token_pepper='test-secret-for-tests-only-at-least-32',
+                              demo_mode=False, scanner_backend='docker', mentor_enabled=False), engine)
+    with TestClient(app) as client:
+        assert client.post('/api/v1/session').json()['data']['demo_available'] is False
+        assert client.post('/api/v1/session/demo').status_code == 403

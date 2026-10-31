@@ -31,7 +31,9 @@ Before enabling real-student collection:
   privileged dependency and needs its own access controls and monitoring.
   The Docker-backed scanner requires a Docker daemon and is not supported by a
   Vercel Function as currently implemented. Do not deploy the API to Vercel
-  until an independently isolated scanner service is provided and tested.
+  for real students until an independently isolated scanner service is provided
+  and tested. The synthetic-data demo may run there with uploads switched off;
+  see [Hosting the demo on Vercel](VERCEL_DEPLOYMENT.md).
 - Test representative real-world document layouts with appropriately authorized
   samples. OCR is fallible. Students must review extracted subject marks and
   confirm the merit percentage, admission round and seat type; historical

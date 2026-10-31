@@ -31,6 +31,7 @@ type Workspace = {
   revision: number;
   compareIds: string[];
   notice: string;
+  uploadsEnabled: boolean;
   refresh: () => Promise<void>;
   notify: (message: string) => void;
   setLocale: (locale: Locale) => Promise<void>;
@@ -44,10 +45,11 @@ type Workspace = {
   t: (key: string) => string;
 };
 const Context = createContext<Workspace | null>(null);
-let bootPromise: Promise<void> | null = null;
+let bootPromise: Promise<boolean> | null = null;
 async function bootstrap() {
-  const session = await write<{ session: string; demo_available?: boolean }>("/session");
+  const session = await write<{ session: string; demo_available?: boolean; uploads_enabled?: boolean }>("/session");
   if (session.session === "created" && session.demo_available) await write("/session/demo");
+  return session.uploads_enabled !== false;
 }
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -61,6 +63,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     [revision, setRevision] = useState(0),
     [compareIds, setCompareIds] = useState<string[]>([]),
     [notice, setNotice] = useState(""),
+    [uploadsEnabled, setUploadsEnabled] = useState(true),
     [deleted, setDeleted] = useState(false);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const notify = useCallback((message: string) => {
@@ -109,7 +112,10 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         throw e;
       });
     bootPromise
-      .then(() => refresh())
+      .then((enabled) => {
+        if (active) setUploadsEnabled(enabled);
+        return refresh();
+      })
       .then(() => {
         if (active) {
           setReady(true);
@@ -203,6 +209,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         revision,
         compareIds,
         notice,
+        uploadsEnabled,
         refresh,
         notify,
         setLocale,

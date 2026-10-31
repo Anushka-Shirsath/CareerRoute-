@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+import os
 from pathlib import Path
 from sqlalchemy import create_engine, event, select, text
 from sqlalchemy.engine import make_url
@@ -21,7 +22,8 @@ def make_engine(url, pool_size=None):
         # Reuse a small number of sessions on Supabase's session pooler. The
         # transaction pooler/serverless path retains NullPool. SET LOCAL role
         # and owner context still expire on each commit/rollback.
-        if pool_size is None and parsed.host and parsed.host.endswith('.pooler.supabase.com') and parsed.port == 5432:
+        # Serverless instances each hold their own pool, so Vercel always uses NullPool.
+        if pool_size is None and not os.environ.get('VERCEL') and parsed.host and parsed.host.endswith('.pooler.supabase.com') and parsed.port == 5432:
             pool_size = 3
         options = {'pool_size': pool_size, 'max_overflow': 0, 'pool_recycle': 300} if pool_size else {'poolclass': NullPool}
     engine = create_engine(url, pool_pre_ping=True, connect_args={'check_same_thread': False} if url.startswith('sqlite') else {'prepare_threshold': None}, **options)

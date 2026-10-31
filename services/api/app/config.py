@@ -27,15 +27,25 @@ class Settings(BaseSettings):
     auth_enabled: bool = False
     master_enabled: bool = False
     evidence_backend: Literal['local', 'postgres'] = 'local'
-    scanner_backend: Literal['process', 'docker'] = 'process'
+    # 'disabled' switches marksheet upload off, for hosts such as Vercel that cannot run the isolated scanner.
+    scanner_backend: Literal['process', 'docker', 'disabled'] = 'process'
     scanner_image: str = Field(default='careerquest-scanner:local', min_length=1, max_length=200,
                                pattern=r'^[A-Za-z0-9][A-Za-z0-9._/:@-]*$')
     supabase_url: str = ''
     supabase_publishable_key: str = ''
     max_upload_bytes: int = 5 * 1024 * 1024
 
+    @property
+    def uploads_enabled(self):
+        return self.scanner_backend != 'disabled'
+
     def validate_production(self):
-        if self.scanner_backend != 'docker' and (self.environment != 'development' or not self.demo_mode):
+        if self.scanner_backend == 'disabled':
+            # No document is ever parsed, so the scanner is not needed. Real-student
+            # collection still needs the isolated scanner, so this is demo-only.
+            if not self.demo_mode:
+                raise ValueError('SCANNER_BACKEND=disabled is only for the synthetic-data demo (DEMO_MODE=true).')
+        elif self.scanner_backend != 'docker' and (self.environment != 'development' or not self.demo_mode):
             raise ValueError('Non-demo deployments require the isolated Docker scanner.')
         if self.environment == 'production':
             if not self.cookie_secure or len(self.share_token_pepper) < 32:

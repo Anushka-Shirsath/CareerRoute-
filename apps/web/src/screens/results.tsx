@@ -234,7 +234,7 @@ export function MarksPage({ review = false }: { review?: boolean }) {
             <Tag>{review ? "Not used until confirmed" : "Demo data only"}</Tag>
           }
         >
-          {!review && (
+          {!review && ws.uploadsEnabled && (
             <div
               className="tab-bar"
               role="tablist"

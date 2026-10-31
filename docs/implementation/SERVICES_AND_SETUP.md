@@ -58,10 +58,12 @@ The local PostgreSQL dataset measured about 263 MiB after the supplementary extr
 
 ## 3. Deploy the API
 
-The previously documented Vercel Function deployment cannot run the required
-isolated Docker scanner. It is not a supported real-student deployment. Use a
-host with a controlled Docker runtime, or implement and independently verify an
-isolated scanner service before deploying to a serverless platform. Configure:
+A Vercel Function cannot run the required isolated Docker scanner, so Vercel is
+only supported for the synthetic-data demo with uploads switched off
+(`SCANNER_BACKEND=disabled`); follow [Hosting the demo on Vercel](VERCEL_DEPLOYMENT.md).
+For real students, use a host with a controlled Docker runtime, or implement and
+independently verify an isolated scanner service before deploying to a
+serverless platform. Configure:
 
 ```dotenv
 ENVIRONMENT=production

@@ -93,7 +93,7 @@ The full normalized database measured about **263 MiB in local PostgreSQL**, inc
 
 ## Services and setup
 
-Only **Groq needs an API key for the mentor**. Supabase Postgres and Vercel are the optional free hosting path. See [exact setup and verified free allowances](docs/implementation/SERVICES_AND_SETUP.md). Manual entry, parsing, scoring, matching, costs, reports and the mentor fallback run without a paid API.
+Only **Groq needs an API key for the mentor**. Supabase Postgres and Vercel are the optional free hosting path. See [exact setup and verified free allowances](docs/implementation/SERVICES_AND_SETUP.md). Manual entry, parsing, scoring, matching, costs, reports and the mentor fallback run without a paid API. To put the demo online, follow [Hosting the demo on Vercel](docs/implementation/VERCEL_DEPLOYMENT.md); marksheet upload is switched off there.
 
 ## Architecture and contracts
 

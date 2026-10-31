@@ -315,7 +315,11 @@ def create_app(settings=None, engine=None):
 
     @app.post(PREFIX + '/session', response_model=Envelope, tags=['Session'])
     def session(request: Request, response: Response):
-        return envelope(request, start_session(request, response))
+        return envelope(request, {**start_session(request, response), 'uploads_enabled': settings.uploads_enabled})
+
+    def require_uploads():
+        if not settings.uploads_enabled:
+            raise Problem('UPLOAD_UNAVAILABLE', 'Marksheet upload is not available on this site. Enter your marks by hand instead.', 503)
 
     @app.post(PREFIX + '/session/demo', response_model=Envelope, tags=['Session'])
     def demo(request: Request, student: StudentDep):
@@ -699,6 +703,7 @@ def create_app(settings=None, engine=None):
 
     @app.post(PREFIX + '/results/upload-url', response_model=Envelope, tags=['Results'])
     def upload_url(value: UploadRequest, request: Request, student: StudentDep):
+        require_uploads()
         if value.size > settings.max_upload_bytes:
             raise Problem('UPLOAD_REJECTED', 'PDF exceeds this deployment\'s configured upload limit. Use a smaller PDF or manual entry.')
         consume(student.db, student.ws.user_id, 'uploads', 10)
@@ -710,6 +715,7 @@ def create_app(settings=None, engine=None):
 
     @app.put(PREFIX + '/uploads/{document_id}', response_model=Envelope, tags=['Results'])
     async def upload(document_id: str, token: str, request: Request):
+        require_uploads()
         try:
             payload, signature = token.split('.')
             expected = hmac.new(settings.share_token_pepper.encode(), payload.encode(), hashlib.sha256).hexdigest()
@@ -742,6 +748,7 @@ def create_app(settings=None, engine=None):
 
     @app.post(PREFIX + '/results/extract', response_model=Envelope[ResultView], tags=['Results'])
     def extract(value: ExtractRequest, request: Request, student: StudentDep):
+        require_uploads()
         row = student.ws.require('document', value.document_id)
         if row.data.get('result_id'):
             existing = student.ws.require('result', row.data['result_id'])

@@ -21,7 +21,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.exc import SQLAlchemyError
 from pydantic import AfterValidator, BaseModel, Field, model_validator
 from starlette.exceptions import HTTPException
-from . import catalogue, master_catalogue, local_catalogue
+from . import catalogue, master_catalogue, local_catalogue, recommend
 from .ai.mentor import chat
 from .config import ROOT, Settings
 from .content import mission
@@ -108,6 +108,13 @@ class CutoffRecommendationInput(BaseModel):
     round: str = Field(min_length=1, max_length=80)
     stage: str = Field(min_length=1, max_length=80)
     seat_type: str = Field(min_length=1, max_length=80)
+
+
+class RecommendationInput(BaseModel):
+    percent: float | None = Field(default=None, ge=0, le=100, allow_inf_nan=False)
+    pathway_id: Literal['fyjc_science', 'fyjc_commerce', 'fyjc_arts', 'polytechnic_diploma'] | None = None
+    districts: list[Annotated[str, Field(min_length=1, max_length=60)]] = Field(default_factory=list, max_length=5)
+    limit: int = Field(default=20, ge=1, le=50)
 
 
 def envelope(request, data, warnings=None):
@@ -875,6 +882,19 @@ def create_app(settings=None, engine=None):
                 valid.append({**item, 'offering_id': offering.id, 'name': institution.name, 'program_name': offering.data['program_name'], 'district': institution.district, 'difference': round(value.merit_percent - item['cutoff_percent'], 2)})
         valid.sort(key=lambda row: (row['difference'], row['name'].casefold(), row['offering_id']))
         return envelope(request, {'items': valid[:50], 'total': len(valid), 'merit_percent': value.merit_percent, 'notice': 'Historical code-matched records are unconfirmed; this is not an admission prediction.'})
+
+    @app.post(PREFIX + '/recommendations', response_model=Envelope, tags=['Matching'])
+    def recommendations(value: RecommendationInput, request: Request, student: StudentDep):
+        if not settings.master_enabled:
+            raise Problem('NOT_FOUND', 'Historical cutoff data is not available on this server.', 404)
+        percent = value.percent
+        if percent is None:
+            academic = student.academic()
+            percent = academic and academic['aggregate']['value']
+            if percent is None:
+                raise Problem('VALIDATION_FAILED', 'Confirm your marksheet result, or enter a percentage, to get suggestions.', 422)
+        consume(student.db, student.ws.user_id, 'matches', 60, 'hour', 'CONFLICT')
+        return envelope(request, recommend.recommend(student.db, percent, value.pathway_id, value.districts, student.category(), value.limit))
 
     @app.post(PREFIX + '/costs/compare', response_model=Envelope, tags=['Costs'])
     def compare(value: CostCompare, request: Request, student: StudentDep):

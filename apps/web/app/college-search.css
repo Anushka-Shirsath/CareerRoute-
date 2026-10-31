@@ -74,9 +74,15 @@
 .cutoff-fields { border: 0; margin: 0; padding: 0; min-width: 0; }
 .cutoff-inputs { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 18px; margin-bottom: 20px; }
 .cutoff-inputs > :first-child { grid-column: span 2; }
+.marks-recommendations .cutoff-inputs { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.marks-recommendations .cutoff-inputs > :first-child { grid-column: auto; }
 .cutoff-explorer .check-field { margin: 12px 0; }
 .cutoff-explorer .button { margin-top: 10px; }
 .cutoff-results { margin-top: 28px; }
+.recommend-band { margin-top: 24px; }
+.recommend-band h4 { margin: 0 0 4px; font-size: 18px; }
+.cutoff-advanced { margin-top: 28px; padding-top: 20px; border-top: 1px solid #c4d3ca; }
+.cutoff-advanced > summary { cursor: pointer; font-weight: 600; margin-bottom: 16px; }
 .cutoff-results h3 { margin: 0 0 6px; font-size: 20px; }
 .cutoff-result { display: grid; grid-template-columns: minmax(0,2fr) minmax(180px,1fr); gap: 18px; padding: 20px; margin-top: 12px; background: #f9fcf9; border-radius: 5px; }
 .cutoff-result p { margin: 6px 0; line-height: 1.5; }
@@ -85,7 +91,7 @@
 @media (max-width: 800px) { .cutoff-inputs { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media (max-width: 500px) {
  .cutoff-explorer { padding: 20px; }
- .cutoff-inputs { grid-template-columns: minmax(0,1fr); }
+ .cutoff-inputs, .marks-recommendations .cutoff-inputs { grid-template-columns: minmax(0,1fr); }
  .cutoff-inputs > :first-child { grid-column: auto; }
  .cutoff-result { grid-template-columns: minmax(0,1fr); gap: 12px; }
 }

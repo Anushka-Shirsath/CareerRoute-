@@ -725,7 +725,7 @@ export function SharedReportPage({ token }: { token: string }) {
         ) : null}
       </main>
       <footer className="public-report-footer">
-        <span>CareerQuest Maharashtra · A student-controlled snapshot</span>
+        <span>CareerQuest · A student-controlled snapshot</span>
         <Link href="/privacy">Privacy & data</Link>
       </footer>
     </div>

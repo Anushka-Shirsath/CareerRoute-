@@ -80,7 +80,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <div className="workspace-scope">
           <span className="scope-dot" />
           <span>After Class 10</span>
-          <span className="scope-region">Maharashtra</span>
         </div>
         <nav id="main-navigation" aria-label="Main navigation">
           <p className="nav-group">Your exploration</p>

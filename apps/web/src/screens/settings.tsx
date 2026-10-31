@@ -574,7 +574,7 @@ export function PrivacyPage() {
         <section>
           <h2>This is a synthetic-data demo</h2>
           <p>
-            CareerQuest Maharashtra is an assignment website for exploring
+            CareerQuest is an assignment website for exploring
             options after Class 10. Use sample results, synthetic marksheets and
             fictional personal details. Real-student launch and parental-consent
             processes are outside this demo.

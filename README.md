@@ -1,4 +1,4 @@
-# CareerQuest Maharashtra
+# CareerQuest
 
 **Real-student launch is not yet enabled.** See [real-student readiness](docs/implementation/REAL_STUDENT_READINESS.md) for the remaining privacy, deployment and verification work. Use synthetic marksheets until that work is complete.
 

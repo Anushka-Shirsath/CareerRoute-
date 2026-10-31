@@ -232,7 +232,7 @@ def create_app(settings=None, engine=None):
             initialize(engine)
         yield
 
-    app = FastAPI(title='CareerQuest Maharashtra Backend', version='1.0.0', description='Student workspaces with optional Supabase email sign-in and anonymous guest sessions. All private responses are no-store.', lifespan=lifespan, responses={status: {'model': ErrorEnvelope} for status in [401, 403, 404, 409, 413, 422, 429, 500, 503]})
+    app = FastAPI(title='CareerQuest Backend', version='1.0.0', description='Student workspaces with optional Supabase email sign-in and anonymous guest sessions. All private responses are no-store.', lifespan=lifespan, responses={status: {'model': ErrorEnvelope} for status in [401, 403, 404, 409, 413, 422, 429, 500, 503]})
     app.state.engine, app.state.settings = engine, settings
     origins = [x.strip() for x in settings.allowed_origins.split(',') if x.strip()]
     app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], allow_headers=['Content-Type', 'Authorization'])

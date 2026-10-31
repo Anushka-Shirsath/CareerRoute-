@@ -139,9 +139,7 @@ export function Brand({ small = false }: { small?: boolean }) {
           strokeLinecap="round"
         />
       </svg>
-      <span>
-        CareerQuest<span className="brand-place">Maharashtra</span>
-      </span>
+      <span>CareerQuest</span>
     </Link>
   );
 }

@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "CareerQuest Maharashtra Backend",
+    "title": "CareerQuest Backend",
     "description": "Student workspaces with optional Supabase email sign-in and anonymous guest sessions. All private responses are no-store.",
     "version": "1.0.0"
   },

@@ -529,11 +529,11 @@ export function PrivacyPage() {
         <section>
           <h2>The mentor has boundaries</h2>
           <p>
-            The optional Groq-powered mentor reads only allowlisted,
-            owner-scoped information and public source facts. Your optional
-            comparison category is excluded. A proposed preference change needs
-            your explicit confirmation, and guesses are saved only if you choose
-            to remember them.
+            If you choose to use the Groq-powered mentor and check the consent
+            box, your message, recent conversation and relevant saved details,
+            including draft and confirmed marks, may be sent to Groq. You can
+            uncheck the box to stop further messages. Your optional comparison
+            category is excluded. Preference changes require your confirmation.
           </p>
         </section>
         <section>

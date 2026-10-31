@@ -26,7 +26,7 @@ def fixed_reply(message, locale):
     return None
 
 
-def chat(student, settings, message, locale, confirmed_change_id=None, page_path=None):
+def chat(student, settings, message, locale, confirmed_change_id=None, page_path=None, provider_consent=False):
     if confirmed_change_id:
         change = apply_confirmed_change(student, confirmed_change_id)
         reply = {'en': 'Your confirmed preference has been saved. You can review your updated matches.', 'mr': 'तुमची पुष्टी केलेली पसंती जतन केली आहे. अद्ययावत महाविद्यालये पाहू शकता.', 'hi': 'आपकी पुष्टि की हुई पसंद सेव हो गई है। अब अद्यतन कॉलेज सूची देख सकते हैं।'}[locale]
@@ -36,6 +36,9 @@ def chat(student, settings, message, locale, confirmed_change_id=None, page_path
         return {'reply': refusal, 'used_tools': [], 'sources': [], 'memory_suggestions': [], 'fallback': False}
     if not settings.mentor_enabled or not settings.groq_api_key:
         return fallback(locale)
+    if provider_consent is not True:
+        from ..errors import Problem
+        raise Problem('CONSENT_REQUIRED', 'Please give consent before sending your message and saved context to Groq.', 422)
     prompt = (Path(__file__).parent / 'prompts/mentor_system.md').read_text(encoding='utf-8')
     messages = [{'role': 'system', 'content': prompt + '\nRequested locale: ' + locale}]
     if student.profile().get('chat_history_enabled', True):

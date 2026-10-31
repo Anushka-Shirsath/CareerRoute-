@@ -81,16 +81,35 @@ test('festival builder is playable and remains separate from career scoring', as
 });
 
 test('floating mentor sends the current screen with the question', async ({page}) => {
+  let releaseHistory!: () => void;
+  const historyReady = new Promise<void>(resolve => { releaseHistory = resolve; });
+  await page.route('**/api/v1/mentor/messages?*', async route => {
+    await historyReady;
+    await route.fulfill({json:{data:{items:[],next_cursor:null},warnings:[],request_id:'test'}});
+  });
   await page.route('**/api/v1/mentor/chat', async route => {
     const body = route.request().postDataJSON();
     expect(body.page_path).toBe('/explore');
+    expect(body.provider_consent).toBe(true);
     await route.fulfill({json:{data:{reply:'Check each pathway against your goals.',sources:[],fallback:false},warnings:[],request_id:'test'}});
   });
   await page.goto('/explore');
   await page.getByRole('button', {name:'Ask mentor'}).click();
   await page.getByLabel('Message to the career mentor').fill('Is this a good choice?');
+  await expect(page.getByRole('button', {name:'Send mentor message'})).toBeDisabled();
+  await page.getByRole('checkbox', {name: /I agree to share with Groq/}).check();
   await page.getByRole('button', {name:'Send mentor message'}).click();
   await expect(page.getByText('Check each pathway against your goals.')).toBeVisible();
+  const historyResponse = page.waitForResponse(response => response.url().includes('/api/v1/mentor/messages?'));
+  releaseHistory();
+  await historyResponse;
+  await expect(page.getByText('Check each pathway against your goals.')).toBeVisible();
+  await page.getByRole('checkbox', {name: /I agree to share with Groq/}).uncheck();
+  await page.getByLabel('Message to the career mentor').fill('Another question');
+  await expect(page.getByRole('button', {name:'Send mentor message'})).toBeDisabled();
+  const accessibility = await new AxeBuilder({page}).include('.mentor-widget-panel').withTags(['wcag2a', 'wcag2aa']).analyze();
+  expect(accessibility.violations.filter(v => ['serious', 'critical'].includes(v.impact || ''))).toEqual([]);
+  await page.request.delete('/api/v1/me');
 });
 
 test('finder explains the missing district and can search statewide', async ({page}) => {
@@ -105,6 +124,7 @@ test('finder explains the missing district and can search statewide', async ({pa
 
 test('mentor submits a question to the real backend and renders an answer', async ({page}) => {
   await page.goto('/mentor');
+  await page.getByRole('checkbox', {name: /I agree to share this conversation with Groq/}).check();
   await page.getByRole('textbox',{name:'Message to the career mentor'}).fill('Which fees are verified in this project?');
   await page.getByRole('button',{name:'Send mentor message'}).click();
   await expect(page.locator('.chat-message.assistant')).not.toHaveCount(0,{timeout:60000});

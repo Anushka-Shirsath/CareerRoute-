@@ -9,6 +9,7 @@ jobs:
       DATABASE_URL: '${{ secrets.EVAL_DATABASE_URL }}'
       SHARE_TOKEN_PEPPER: '${{ secrets.EVAL_SHARE_TOKEN_PEPPER }}'
       ENVIRONMENT: production
+      SCANNER_BACKEND: docker
       COOKIE_SECURE: 'true'
       PUBLIC_API_ORIGIN: https://mentor-eval.invalid
     steps:

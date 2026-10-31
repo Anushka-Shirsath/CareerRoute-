@@ -38,7 +38,7 @@ for case in cases:
             client.put('/api/v1/me/shortlist/' + item['id'], json={'status': 'shortlisted'})
         proposal_id = None
         if case.get('confirm_prior_proposal'):
-            response = client.post('/api/v1/mentor/chat', json={'message': 'Propose changing my target district to Nashik.'})
+            response = client.post('/api/v1/mentor/chat', json={'message': 'Propose changing my target district to Nashik.', 'provider_consent': True})
             proposal = response.json().get('data', {}).get('pending_preference_change')
             proposal_id = proposal.get('proposal_id') if proposal else None
         if case.get('exhaust_quota'):
@@ -47,7 +47,7 @@ for case in cases:
                 client.post('/api/v1/mentor/chat', json={'message': 'Hello'})
             settings.mentor_enabled = True
         settings.mentor_enabled = not case.get('disable_provider', False)
-        payload = {'message': case['message'].replace('{institution}', institution), 'locale': case.get('locale', 'en')}
+        payload = {'message': case['message'].replace('{institution}', institution), 'locale': case.get('locale', 'en'), 'provider_consent': True}
         if proposal_id:
             payload['confirm_preference_change_id'] = proposal_id
         response = client.post('/api/v1/mentor/chat', json=payload)

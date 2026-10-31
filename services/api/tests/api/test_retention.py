@@ -15,6 +15,20 @@ def test_uploaded_file_deleted_after_window(client, engine):
         assert db.get(Record, record_id).data['content'] is None
 
 
+def test_expired_unconfirmed_extracted_subjects_are_purged(client, engine):
+    with transaction(engine) as db:
+        owner = db.scalar(select(GuestSession.user_id))
+        record = Workspace(db, owner).put('document', {'content': None,
+            'extracted_subjects': [{'name_as_shown': 'Mathematics', 'obtained': 84}],
+            'extraction_warnings': ['Review your marks'],
+            'delete_after': (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()})
+        record_id = record.id
+    assert cleanup(engine)['expired_upload_contents_purged'] == 1
+    with transaction(engine) as db:
+        data = db.get(Record, record_id).data
+        assert data['extracted_subjects'] is None and data['extraction_warnings'] is None
+
+
 def test_expired_workspace_rows_deleted(client, engine):
     with transaction(engine) as db:
         row = db.scalar(select(GuestSession))

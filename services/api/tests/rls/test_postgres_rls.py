@@ -105,7 +105,7 @@ def test_full_api_uses_restricted_postgres_role(postgres_url):
     params = conninfo_to_dict(postgres_url)
     url = URL.create('postgresql+psycopg', username=name, password=password, host=params.get('host', 'localhost'), port=int(params.get('port', 5432)), database=params.get('dbname', 'postgres'))
     engine = make_engine(url.render_as_string(hide_password=False))
-    app = create_app(Settings(environment='production', database_url=url.render_as_string(hide_password=False), public_api_origin='https://test.example', cookie_secure=True, share_token_pepper='test-pepper-at-least-32-characters', mentor_enabled=False), engine)
+    app = create_app(Settings(environment='production', database_url=url.render_as_string(hide_password=False), public_api_origin='https://test.example', cookie_secure=True, share_token_pepper='test-pepper-at-least-32-characters', mentor_enabled=False, scanner_backend='docker'), engine)
     with TestClient(app, base_url='https://test.example') as client:
         response = client.post('/api/v1/session')
         assert response.status_code == 200, response.text

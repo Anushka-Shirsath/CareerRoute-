@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Literal
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -21,11 +22,16 @@ class Settings(BaseSettings):
     auth_enabled: bool = False
     master_enabled: bool = False
     evidence_backend: Literal['local', 'postgres'] = 'local'
+    scanner_backend: Literal['process', 'docker'] = 'process'
+    scanner_image: str = Field(default='careerquest-scanner:local', min_length=1, max_length=200,
+                               pattern=r'^[A-Za-z0-9][A-Za-z0-9._/:@-]*$')
     supabase_url: str = ''
     supabase_publishable_key: str = ''
     max_upload_bytes: int = 5 * 1024 * 1024
 
     def validate_production(self):
+        if self.scanner_backend != 'docker' and (self.environment != 'development' or not self.demo_mode):
+            raise ValueError('Non-demo deployments require the isolated Docker scanner.')
         if self.environment == 'production':
             if not self.cookie_secure or len(self.share_token_pepper) < 32:
                 raise ValueError('Production needs COOKIE_SECURE=true and SHARE_TOKEN_PEPPER (32+ chars).')

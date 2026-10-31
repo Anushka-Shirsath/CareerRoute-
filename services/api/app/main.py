@@ -30,7 +30,6 @@ from .domain.compass import current_node
 from .errors import Problem
 from .guides import guide
 from .models import AccountSession, DomainEvent, GuestSession, RateCounter, Record, Sensitive, Share, now, uid
-from .pdf_extract import document_as_pdf, extract_pdf
 from .request_limits import RequestBodyLimit
 from .scan_process import scan_document
 from .schemas import (
@@ -233,7 +232,8 @@ def create_app(settings=None, engine=None):
             student = Student(Workspace(db, user_id))
             student.ws.save('profile', student.profile())
             response.set_cookie(COOKIE, token, max_age=settings.session_days * 86400, secure=settings.cookie_secure, httponly=True, samesite='strict', path='/')
-            return {'session': 'created', 'expires_at': expires, 'notice': 'Anonymous browser workspace. No account or login required. Use synthetic data only.'}
+            return {'session': 'created', 'expires_at': expires, 'demo_available': settings.demo_mode,
+                    'notice': 'Anonymous browser workspace. No account or login required. Use synthetic data only.'}
 
     @app.post(PREFIX + '/session', response_model=Envelope, tags=['Session'])
     def session(request: Request, response: Response):
@@ -446,7 +446,7 @@ def create_app(settings=None, engine=None):
             # Extract before committing anything: the original document never
             # enters the database, including when extraction fails.
             subjects, warnings = await asyncio.to_thread(
-                scan_document, bytes(content), row.data['mime']
+                scan_document, bytes(content), row.data['mime'], settings.scanner_backend, settings.scanner_image
             )
             row.data = {**row.data, 'content': None, 'extracted_subjects': subjects,
                         'extraction_warnings': warnings, 'uploaded': True}
@@ -466,7 +466,7 @@ def create_app(settings=None, engine=None):
             # Compatibility with documents uploaded before this change.
             if not row.data.get('content'):
                 raise Problem('UPLOAD_REJECTED', 'Upload a PDF before extracting, or use manual entry.')
-            subjects, warnings = extract_pdf(document_as_pdf(base64.b64decode(row.data['content']), row.data['mime']))
+            subjects, warnings = scan_document(base64.b64decode(row.data['content']), row.data['mime'], settings.scanner_backend, settings.scanner_image)
         data = student.create_result({'board': value.board, 'exam_year': value.exam_year, 'result_type': 'official', 'subjects': subjects}, 'pdf_text' if row.data['mime'] == 'application/pdf' else 'image_vision', value.document_id)
         row.data = {**row.data, 'content': None, 'extracted_subjects': None,
                     'extraction_warnings': None, 'result_id': data['result_id']}
@@ -649,7 +649,7 @@ def create_app(settings=None, engine=None):
     @app.post(PREFIX + '/mentor/chat', response_model=Envelope[MentorReply], tags=['Mentor'])
     def mentor(value: MentorInput, request: Request, student: StudentDep):
         consume(student.db, student.ws.user_id, 'mentor', 15)
-        result = chat(student, settings, value.message, value.locale or student.profile().get('locale', 'en'), value.confirm_preference_change_id, value.page_path)
+        result = chat(student, settings, value.message, value.locale or student.profile().get('locale', 'en'), value.confirm_preference_change_id, value.page_path, value.provider_consent)
         # A modest explicit-interest suggestion. It is never active memory until
         # the student accepts it, and inferences are not injected into the model.
         interest = re.fullmatch(r'I (?:enjoy|like|love) ([A-Za-z ,&-]{2,100})[.!]?', value.message, re.I)

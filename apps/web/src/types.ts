@@ -44,7 +44,8 @@ export type Fee = {
   per?: string;
   assumption?: string;
 };
-export type Offering = components["schemas"]["OfferingFacts"] & {
+type KnownProperties<T> = { [K in keyof T as string extends K ? never : number extends K ? never : K]: T[K] };
+export type Offering = Omit<KnownProperties<components["schemas"]["OfferingFacts"]>, "possible_cutoffs"> & {
   published_fee?: { amount: number; academic_year: string; source_url: string; note: string | null } | null;
   historical_hostel?: { boys_capacity: number | null; girls_capacity: number | null; data_status: string; source_url: string | null } | null;
   possible_cutoffs?: { academic_year: string; round: string; seat_type: string; stage: string; reservation: string | null; rank: number | null; merit_percent: number | null; choice_code: string; join_status: string; source_url: string | null }[];

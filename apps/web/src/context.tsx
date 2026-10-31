@@ -46,8 +46,8 @@ type Workspace = {
 const Context = createContext<Workspace | null>(null);
 let bootPromise: Promise<void> | null = null;
 async function bootstrap() {
-  const session = await write<{ session: string }>("/session");
-  if (session.session === "created") await write("/session/demo");
+  const session = await write<{ session: string; demo_available?: boolean }>("/session");
+  if (session.session === "created" && session.demo_available) await write("/session/demo");
 }
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

@@ -22,7 +22,7 @@ export const COMBOS: { ids: readonly BoothId[]; name: string; detail: string }[]
 export const MAX_BOOTHS = 4;
 export const RUSH_SECONDS = 12;
 export const MAX_GREETINGS = 5;
-export const RECORD_KEY = "cq_festival_record_v2";
+export const FESTIVAL_RECORD_STORAGE_NAME = "cq_festival_record_v2";
 
 export function scoreFestival(ids: readonly BoothId[], theme: string) {
   const selected = BOOTHS.filter((booth) => ids.includes(booth.id));

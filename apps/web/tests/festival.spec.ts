@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { BOOTHS, CHALLENGES, THEMES, canAddBooth, scoreFestival, RECORD_KEY, type BoothId } from '../src/screens/festival-rules';
+import { BOOTHS, CHALLENGES, THEMES, canAddBooth, scoreFestival, FESTIVAL_RECORD_STORAGE_NAME, type BoothId } from '../src/screens/festival-rules';
 
 test('all challenge themes are winnable with three stars and legal budgets', () => {
   // Exhaust the tiny choice space: future balance changes cannot make a day impossible.
@@ -41,7 +41,7 @@ test('three-day campaign scores correctly, saves a record, and can restart', asy
     if (day < 2) await page.getByRole('button', { name: `On to day ${day + 2}` }).click();
   }
   await expect(page.getByText('Festival complete: 9 of 9 stars!')).toBeVisible();
-  expect(await page.evaluate(key => JSON.parse(localStorage.getItem(key)!), RECORD_KEY)).toEqual({ best: 53, festivals: 3 });
+  expect(await page.evaluate(key => JSON.parse(localStorage.getItem(key)!), FESTIVAL_RECORD_STORAGE_NAME)).toEqual({ best: 53, festivals: 3 });
   await page.getByRole('button', { name: /Play a new festival/ }).click();
   await expect(page.locator('.festival-day-row')).toContainText('Day 1 of 3');
   await expect(page.getByTestId('festival-score')).toHaveText('0 / 30');
@@ -100,7 +100,7 @@ test('rush works by keyboard, timeout resolves, and retry refunds the budget', a
 test('mobile layout, reduced motion, storage recovery and accessibility', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.addInitScript(key => localStorage.setItem(key, '{invalid'), RECORD_KEY);
+  await page.addInitScript(key => localStorage.setItem(key, '{invalid'), FESTIVAL_RECORD_STORAGE_NAME);
   await page.goto('/compass/play');
   await expect(page.getByRole('heading', { name: 'Big Day Festival' })).toBeVisible();
   const checkLayout = async () => {

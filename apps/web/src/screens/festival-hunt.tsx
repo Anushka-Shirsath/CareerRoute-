@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import localFont from "next/font/local";
 import { AttractionArt, FestivalMap, VisitorArt } from "./festival-art";
 import {
-  BOOTHS, CHALLENGES, COMBOS, MAX_BOOTHS, MAX_GREETINGS, RECORD_KEY,
+  BOOTHS, CHALLENGES, COMBOS, MAX_BOOTHS, MAX_GREETINGS, FESTIVAL_RECORD_STORAGE_NAME,
   RUSH_SECONDS, THEMES, canAddBooth, scoreFestival, type BoothId,
 } from "./festival-rules";
 
@@ -50,7 +50,7 @@ export function FestivalHunt({ onContinue }: { onContinue: () => void }) {
 
   useEffect(() => {
     try {
-      const saved: unknown = JSON.parse(localStorage.getItem(RECORD_KEY) || "null");
+      const saved: unknown = JSON.parse(localStorage.getItem(FESTIVAL_RECORD_STORAGE_NAME) || "null");
       if (saved && typeof saved === "object" && "best" in saved && "festivals" in saved &&
         Number.isSafeInteger(saved.best) && Number.isSafeInteger(saved.festivals) &&
         Number(saved.best) >= 0 && Number(saved.best) <= 100 && Number(saved.festivals) >= 0) setRecord(saved as FestivalRecord);
@@ -98,7 +98,7 @@ export function FestivalHunt({ onContinue }: { onContinue: () => void }) {
     const next = { best: Math.max(record.best, visitors), festivals: record.festivals + 1 };
     setNewBest(visitors > record.best); setRecord(next);
     setStars((previous) => { const next = [...previous]; next[day] = Math.max(previous[day] || 0, earnedStars); return next; });
-    try { localStorage.setItem(RECORD_KEY, JSON.stringify(next)); } catch {}
+    try { localStorage.setItem(FESTIVAL_RECORD_STORAGE_NAME, JSON.stringify(next)); } catch {}
     setAnnouncement(`${won ? "Festival success!" : "The town had a lovely day!"} ${visitors} visitors. ${earnedStars} of 3 stars.`);
     playTone("win");
     resultHeading.current?.focus({ preventScroll: true });

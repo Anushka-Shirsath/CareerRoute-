@@ -10,6 +10,7 @@ import "./shortlist.css";
 import "./auth.css";
 import "./status.css";
 import "./shell-extras.css";
+import "./hierarchy.css";
 import { WorkspaceProvider } from "../src/context";
 
 export const metadata: Metadata = {

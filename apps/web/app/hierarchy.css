@@ -1,0 +1,51 @@
+/* Visual hierarchy: one loud block per page (the next step), quiet white
+   cards for everything else, and small muted labels above bold values. */
+
+/* Home: the next step leads, alone in colour. */
+.home-lead { margin-bottom: 40px; }
+.home-lead > .next-panel { background: var(--yellow); }
+.home-lead > .next-panel h2 { font-size: 24px; letter-spacing: -.035em; }
+.home-grid > .compass-invite { background: #fff; color: var(--text); }
+.compass-invite p { color: var(--muted); }
+.compass-invite .compass-motif { color: #266751; }
+.compass-invite .button.secondary { background: #f1f3f5; }
+.compass-invite .button.secondary:hover { background: #e4e8e9; }
+
+/* Section headings are labels for groups, smaller than the content. */
+.home-section-heading { font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+
+/* Progress tiles: white, so the colour above keeps meaning "do this next". */
+.journey-strip { margin-bottom: 40px; }
+.journey-step, .journey-step:nth-child(n) { background: #fff; border: 1px solid #e3e7ea; }
+.journey-step a { min-height: 0; padding: 16px 18px; transition: background .15s ease; }
+.journey-step a:hover { background: #f7f8f9; }
+.journey-step .journey-label { font-size: 12px; color: var(--muted); }
+.journey-step strong { font-size: 18px; margin: 4px 0 2px; display: block; }
+.journey-step p { font-size: 12px; color: #6a737d; margin: 0; }
+.journey-status.complete { background: #28694f; }
+
+/* Routes and checklist: plain cards. */
+.home-grid > .span-7 { background: #fff; }
+.route-list a { border-color: #e3e7ea; }
+.mentor-prompt { background: transparent; border: 1px solid #dfe4e7; }
+
+/* Sidebar: three short groups with small labels. */
+.nav-group { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: #6a737d; padding: 20px 12px 6px; margin: 0; }
+#main-navigation > .nav-group:first-child { padding-top: 8px; }
+
+/* Marks table: column labels must never break inside a word. */
+.subject-table th { white-space: nowrap; font-size: 12px; color: var(--muted); font-weight: 600; }
+.subject-table th:first-child { width: 27%; }
+.subject-table th:nth-child(2) { width: 22%; }
+
+@media (max-width: 600px) {
+  .home-lead { margin-bottom: 28px; }
+  .home-lead > .next-panel h2 { font-size: 21px; }
+  .journey-strip { margin-bottom: 28px; }
+  .journey-step strong { font-size: 16px; }
+  /* The mentor button shrinks to an icon so it covers less of the page. */
+  .mentor-widget { right: 16px; bottom: 16px; }
+  .mentor-widget-trigger { padding: 14px; }
+  .mentor-widget-trigger:not([aria-expanded="true"]) .mentor-widget-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+@media (prefers-reduced-motion: reduce) { .journey-step a { transition: none; } }

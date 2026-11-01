@@ -53,6 +53,6 @@ export function MentorWidget() {
       </form>
       <div className="mentor-widget-footer"><span>Check sources before deciding.</span><Link href="/mentor">Full conversation ↗</Link></div>
     </section>}
-    <button className="mentor-widget-trigger" type="button" aria-expanded={open} onClick={() => setOpen(!open)}><Icon name={open ? "close" : "chat"} size={19} />{open ? ws.t("close") : ws.t("ask")}</button>
+    <button className="mentor-widget-trigger" type="button" aria-expanded={open} onClick={() => setOpen(!open)}><Icon name={open ? "close" : "chat"} size={19} /><span className="mentor-widget-label">{open ? ws.t("close") : ws.t("ask")}</span></button>
   </div>;
 }

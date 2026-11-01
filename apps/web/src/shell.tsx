@@ -23,16 +23,17 @@ const languages: { value: Locale; label: string; name: string }[] = [
   { value: "hi", label: "हिंदी", name: "Hindi" },
 ];
 
+// Grouped so the sidebar reads as three short lists instead of one long one.
 const navigation = [
-  { label: "home", href: "/", icon: "home" },
+  { label: "home", href: "/", icon: "home", group: "exploration" },
   { label: "marks", href: "/start", icon: "file" },
   { label: "explore", href: "/explore", icon: "route" },
   { label: "compass", href: "/compass/report", icon: "compass" },
-  { label: "colleges", href: "/colleges", icon: "graduate" },
+  { label: "colleges", href: "/colleges", icon: "graduate", group: "g_colleges" },
   { label: "finder", href: "/finder", icon: "sliders" },
   { label: "shortlist", href: "/shortlist", icon: "bookmark" },
   { label: "compare", href: "/compare", icon: "scale" },
-  { label: "mentor", href: "/mentor", icon: "chat" },
+  { label: "mentor", href: "/mentor", icon: "chat", group: "g_help" },
   { label: "report", href: "/report/new", icon: "book" },
 ];
 export function Shell({ children }: { children: React.ReactNode }) {
@@ -92,8 +93,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
           <span>After Class 10</span>
         </div>
         <nav id="main-navigation" aria-label="Main navigation">
-          <p className="nav-group">{ws.t("exploration")}</p>
-          {navigation.map((item) => (
+          {navigation.map((item) => [
+            item.group && (
+              <p className="nav-group" key={item.group}>
+                {ws.t(item.group)}
+              </p>
+            ),
             <Link
               key={item.href}
               href={item.href}
@@ -105,8 +110,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
               {active(item.href) && (
                 <Icon name="right" size={14} className="nav-arrow" />
               )}
-            </Link>
-          ))}
+            </Link>,
+          ])}
         </nav>
         <div className="sidebar-bottom">
           <Link

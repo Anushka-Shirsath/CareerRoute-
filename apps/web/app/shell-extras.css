@@ -3,3 +3,5 @@
 .language-switch button { border: 0; border-radius: 999px; padding: 6px 4px; background: transparent; color: #44515b; font-size: 12.5px; font-weight: 600; line-height: 1.2; }
 .language-switch button:hover:not(:disabled) { color: #20242c; }
 .language-switch button[aria-pressed="true"] { background: #20242c; color: #fff; }
+.scan-progress { display: grid; gap: 6px; margin-top: 12px; font-size: 13px; color: #44515b; }
+.scan-progress progress { width: 100%; height: 8px; accent-color: #20242c; }

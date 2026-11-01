@@ -35,7 +35,7 @@ from .request_limits import RequestBodyLimit
 from .scan_process import scan_document
 from .schemas import (
     ChecklistInput, CompassReportInput, ConfirmResult, CostCompare, ExtractRequest,
-    GameEvent, GoalInput, ManualResult, MatchRequest, MentorInput, ParentReportInput,
+    DeviceReadResult, GameEvent, GoalInput, ManualResult, MatchRequest, MentorInput, ParentReportInput,
     Preferences, ProfilePatch, SensitiveInput, ShortlistInput, StartMission, UploadRequest,
 )
 from .student import Student, token_hash
@@ -680,6 +680,14 @@ def create_app(settings=None, engine=None):
     @app.post(PREFIX + '/results/manual', response_model=Envelope[ResultView], tags=['Results'])
     def manual(value: ManualResult, request: Request, student: StudentDep):
         return envelope(request, student.create_result(value))
+
+    @app.post(PREFIX + '/results/device-read', response_model=Envelope[ResultView], tags=['Results'])
+    def device_read(value: DeviceReadResult, request: Request, student: StudentDep):
+        # Only the marks arrive here: the marksheet was read in the browser
+        # and never left the student's device, so no scanner is needed.
+        consume(student.db, student.ws.user_id, 'uploads', 10)
+        data = student.create_result({**value.model_dump(), 'result_type': 'official'}, 'device_ocr')
+        return envelope(request, data, ['Read on your device: OCR can make mistakes, so compare every value with the original.'])
 
     @app.get(PREFIX + '/results', response_model=Envelope, tags=['Results'])
     def result_list(request: Request, student: StudentDep, limit: int = Query(20, ge=1, le=50), cursor: str | None = Query(None, max_length=100)):

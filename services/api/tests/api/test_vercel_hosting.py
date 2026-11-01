@@ -52,3 +52,29 @@ def test_disabled_scanner_turns_uploads_off_cleanly(engine):
 def test_uploads_stay_on_by_default(app):
     with TestClient(app) as client:
         assert client.post('/api/v1/session').json()['data']['uploads_enabled'] is True
+
+
+DEVICE_READ = {'board': 'SSC_MH', 'exam_year': 2026, 'subjects': [
+    {'canonical_subject': 'mathematics', 'name_as_shown': 'Mathematics', 'obtained': 84, 'maximum': 100, 'source': 'extracted'},
+    {'canonical_subject': 'english', 'name_as_shown': 'English', 'obtained': 75, 'maximum': 100, 'source': 'extracted'}]}
+
+
+def test_marks_read_on_the_device_create_a_draft_without_the_scanner(engine):
+    app = create_app(Settings(share_token_pepper=PEPPER, mentor_enabled=False, scanner_backend='disabled'), engine)
+    with TestClient(app) as client:
+        client.post('/api/v1/session')
+        response = client.post('/api/v1/results/device-read', json=DEVICE_READ)
+        assert response.status_code == 200, response.text
+        body = response.json()
+        assert body['data']['confirmation_state'] == 'draft'
+        assert body['data']['extraction_method'] == 'device_ocr'
+        assert body['data']['document_id'] is None
+        assert any('compare every value' in w for w in body['warnings'])
+        assert client.get('/api/v1/me/snapshot').json()['data'] is None
+
+
+def test_device_read_refuses_typed_marks_and_duplicates(client):
+    typed = {**DEVICE_READ, 'subjects': [{**DEVICE_READ['subjects'][0], 'source': 'typed'}]}
+    assert client.post('/api/v1/results/device-read', json=typed).status_code == 422
+    twice = {**DEVICE_READ, 'subjects': [DEVICE_READ['subjects'][0]] * 2}
+    assert client.post('/api/v1/results/device-read', json=twice).status_code == 422

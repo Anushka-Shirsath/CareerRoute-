@@ -19,6 +19,7 @@ import {
   Tag,
 } from "../ui";
 import type { Academic, Page, Result, Subject } from "../types";
+import { readMarksheet, type ScanProgress } from "../device-scan";
 
 const initialSubjects: Subject[] = [
   {
@@ -67,6 +68,7 @@ export function MarksPage({ review = false }: { review?: boolean }) {
     [mode, setMode] = useState<"manual" | "pdf">("manual"),
     [confirmed, setConfirmed] = useState(false),
     [file, setFile] = useState<File | null>(null),
+    [progress, setProgress] = useState<ScanProgress | null>(null),
     [record, setRecord] = useState<Result | null>(null);
   const initialized = useRef(false);
   useEffect(() => {
@@ -176,6 +178,27 @@ export function MarksPage({ review = false }: { review?: boolean }) {
       ws.notify("Your result is confirmed. Your snapshot is ready.");
       router.push("/snapshot");
     });
+  // Where the server cannot run its scanner (as on Vercel), the marksheet is
+  // read in this browser instead and only the marks are sent.
+  const readOnDevice = () =>
+    task.run(async () => {
+      if (!file) throw new Error("Choose a PDF or photo of the marksheet first.");
+      setProgress({ stage: "Starting", percent: 0 });
+      try {
+        const { subjects: found } = await readMarksheet(file, setProgress);
+        const draft = await write<Result>("/results/device-read", {
+          board,
+          exam_year: year,
+          subjects: found,
+        });
+        setRecord(draft);
+        setSubjects(draft.subjects);
+        await ws.refresh();
+        router.push("/start/review");
+      } finally {
+        setProgress(null);
+      }
+    });
   const extract = () =>
     task.run(async () => {
       if (!file) throw new Error("Choose a sample PDF or image first.");
@@ -234,7 +257,7 @@ export function MarksPage({ review = false }: { review?: boolean }) {
             <Tag>{review ? "Not used until confirmed" : "Demo data only"}</Tag>
           }
         >
-          {!review && ws.uploadsEnabled && (
+          {!review && (
             <div
               className="tab-bar"
               role="tablist"
@@ -293,12 +316,22 @@ export function MarksPage({ review = false }: { review?: boolean }) {
             <div className="section-gap">
               <div className="upload-zone">
                 <Icon name="upload" size={28} />
-                <p>
-                  Use a synthetic PDF or image with subject rows such as
-                  “Mathematics 84/100”, or a table labelled Subject, Maximum
-                  and Obtained. Scans are read locally and can contain errors;
-                  check all marks and add any missing subjects manually.
-                </p>
+                {ws.uploadsEnabled ? (
+                  <p>
+                    Use a synthetic PDF or image with subject rows such as
+                    “Mathematics 84/100”, or a table labelled Subject, Maximum
+                    and Obtained. Scans are read locally and can contain errors;
+                    check all marks and add any missing subjects manually.
+                  </p>
+                ) : (
+                  <p>
+                    <strong>Your file never leaves this device.</strong> The
+                    marksheet is read right here in your browser and is not
+                    uploaded or stored. Only the marks go to your workspace, as
+                    a draft you check before anything is used. Works with a
+                    DigiLocker PDF or a clear, flat photo.
+                  </p>
+                )}
                 <Field
                   label="Sample marksheet file"
                   hint="PDF, PNG or JPEG up to 5 MiB; PDFs may have up to 3 pages. Do not upload a real marksheet."
@@ -311,10 +344,16 @@ export function MarksPage({ review = false }: { review?: boolean }) {
                 </Field>
               </div>
               <div className="actions section-gap">
-                <Button busy={task.busy} onClick={extract} icon="file">
+                <Button busy={task.busy} onClick={ws.uploadsEnabled ? extract : readOnDevice} icon="file">
                   Extract a draft
                 </Button>
               </div>
+              {progress && (
+                <div className="scan-progress" role="status" aria-live="polite">
+                  <span>{progress.stage}…</span>
+                  <progress max={100} value={progress.percent} aria-label="Reading progress" />
+                </div>
+              )}
             </div>
           ) : (
             <>

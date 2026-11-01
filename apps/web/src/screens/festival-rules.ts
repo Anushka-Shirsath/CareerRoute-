@@ -1,10 +1,10 @@
 export const BOOTHS = [
-  { id: "robot", name: "Robot rally", type: "Make", cost: 4, visitors: 7, detail: "Tiny robots. Big ambitions.", color: "coral" },
-  { id: "mural", name: "Mural wall", type: "Create", cost: 3, visitors: 5, detail: "Give the whole town a canvas.", color: "pink" },
-  { id: "food", name: "Food lab", type: "Discover", cost: 3, visitors: 5, detail: "A little science. A lot of snacks.", color: "yellow" },
-  { id: "arcade", name: "Arcade tent", type: "Make", cost: 4, visitors: 8, detail: "One more round? Always.", color: "blue" },
-  { id: "music", name: "Music stage", type: "Create", cost: 2, visitors: 4, detail: "Small stage. Main character energy.", color: "orange" },
-  { id: "garden", name: "Green garden", type: "Discover", cost: 2, visitors: 3, detail: "Grow something a little wild.", color: "green" },
+  { id: "robot", name: "Robot rally", type: "Make", cost: 4, visitors: 7, detail: "Tiny robots. Big ambitions.", color: "coral", job: "Robotics and electronics technicians build these for real." },
+  { id: "mural", name: "Mural wall", type: "Create", cost: 3, visitors: 5, detail: "Give the whole town a canvas.", color: "pink", job: "Muralists, graphic designers and illustrators get paid for walls like this." },
+  { id: "food", name: "Food lab", type: "Discover", cost: 3, visitors: 5, detail: "A little science. A lot of snacks.", color: "yellow", job: "Food technologists invent the snacks in every packet you have ever opened." },
+  { id: "arcade", name: "Arcade tent", type: "Make", cost: 4, visitors: 8, detail: "One more round? Always.", color: "blue", job: "Game developers and designers make the games behind this tent." },
+  { id: "music", name: "Music stage", type: "Create", cost: 2, visitors: 4, detail: "Small stage. Main character energy.", color: "orange", job: "Sound engineers make sure the singer is loud and the speaker is not." },
+  { id: "garden", name: "Green garden", type: "Discover", cost: 2, visitors: 3, detail: "Grow something a little wild.", color: "green", job: "Horticulturists and agriculture scientists grow whole farms this way." },
 ] as const;
 export type Booth = typeof BOOTHS[number];
 export type BoothId = Booth["id"];

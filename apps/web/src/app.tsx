@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Shell } from "./shell";
-import { ActionLink, Empty, PageHeader, Panel } from "./ui";
+import { ActionLink, Empty, Loading, PageHeader, Panel } from "./ui";
+import { StatusPage } from "./screens/status";
 import { HomePage } from "./screens/home";
 import { LoginPage, takeLoginFragment } from "./screens/login";
 import { MarksPage, SnapshotPage } from "./screens/results";
@@ -13,8 +14,20 @@ import { ComparePage, ShortlistPage } from "./screens/planning";
 import { MentorPage } from "./screens/mentor";
 import { ReportBuilderPage, SharedReportPage } from "./screens/reports";
 import { CoveragePage, PrivacyPage, SettingsPage } from "./screens/settings";
-import { useData } from "./context";
+import { useData, useWorkspace } from "./context";
 import type { AuthStatus } from "./types";
+
+// Short addresses people type by hand land on the page they meant.
+function Redirect({ to }: { to: string }) {
+  const router = useRouter();
+  useEffect(() => router.replace(to), [router, to]);
+  return <Loading lines={3} />;
+}
+
+function CompassRedirect() {
+  const ws = useWorkspace();
+  return <Redirect to={ws.dashboard?.compass_summary ? "/compass/report" : "/compass/play"} />;
+}
 
 // Accounts are a server setting. Guest-only builds keep /login on the demo home.
 function LoginRoute() {
@@ -22,7 +35,12 @@ function LoginRoute() {
   const [fragment, setFragment] = useState<string | null>(null);
   useEffect(() => setFragment(takeLoginFragment()), []);
   const status = useData<AuthStatus>("/auth/status");
-  if (status.loading || fragment === null) return null;
+  if (status.loading || fragment === null)
+    return (
+      <main className="login-loading" aria-busy="true">
+        <Loading lines={4} />
+      </main>
+    );
   if (status.data?.enabled)
     return <LoginPage signedIn={status.data.signed_in} fragment={fragment} />;
   return <Shell><HomePage /></Shell>;
@@ -58,6 +76,7 @@ function Screens() {
   else if (path === "/explore") screen = <ExplorePage />;
   else if ((parts[0] === "explore" || parts[0] === "guides") && parts[1])
     screen = <PathwayPage id={parts[1]} />;
+  else if (path === "/compass") screen = <CompassRedirect />;
   else if (path === "/compass/play") screen = <CompassPlayPage />;
   else if (path === "/compass/report") screen = <CompassReportPage />;
   else if (path === "/colleges") screen = <DirectoryPage />;
@@ -71,6 +90,8 @@ function Screens() {
   else if (path === "/data") screen = <CoveragePage />;
   else if (path === "/privacy") screen = <PrivacyPage />;
   else if (path === "/settings/privacy") screen = <SettingsPage />;
+  else if (path === "/settings") screen = <Redirect to="/settings/privacy" />;
+  else if (path === "/status") screen = <StatusPage />;
   else
     screen = (
       <>

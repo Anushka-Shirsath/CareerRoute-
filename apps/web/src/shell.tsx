@@ -12,9 +12,16 @@ import {
   ErrorState,
   Loading,
 } from "./ui";
-import { useWorkspace } from "./context";
+import { useData, useWorkspace } from "./context";
 import { MentorWidget } from "./mentor-widget";
 import { route } from "./content";
+import type { AuthStatus, Locale } from "./types";
+
+const languages: { value: Locale; label: string; name: string }[] = [
+  { value: "en", label: "EN", name: "English" },
+  { value: "mr", label: "मराठी", name: "Marathi" },
+  { value: "hi", label: "हिंदी", name: "Hindi" },
+];
 
 const navigation = [
   { label: "home", href: "/", icon: "home" },
@@ -22,6 +29,7 @@ const navigation = [
   { label: "explore", href: "/explore", icon: "route" },
   { label: "compass", href: "/compass/report", icon: "compass" },
   { label: "colleges", href: "/colleges", icon: "graduate" },
+  { label: "finder", href: "/finder", icon: "sliders" },
   { label: "shortlist", href: "/shortlist", icon: "bookmark" },
   { label: "compare", href: "/compare", icon: "scale" },
   { label: "mentor", href: "/mentor", icon: "chat" },
@@ -34,6 +42,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const [menu, setMenu] = useState(false),
     [search, setSearch] = useState("");
   const searchInput = useRef<HTMLInputElement>(null);
+  const auth = useData<AuthStatus>("/auth/status");
+  const signedIn = !!auth.data?.signed_in;
   useEffect(() => setMenu(false), [path]);
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -82,7 +92,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           <span>After Class 10</span>
         </div>
         <nav id="main-navigation" aria-label="Main navigation">
-          <p className="nav-group">Your exploration</p>
+          <p className="nav-group">{ws.t("exploration")}</p>
           {navigation.map((item) => (
             <Link
               key={item.href}
@@ -113,6 +123,21 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <Icon name="settings" />
             {ws.t("privacy")}
           </Link>
+          <div className="language-switch" role="group" aria-label={ws.t("language")}>
+            {languages.map((language) => (
+              <button
+                key={language.value}
+                type="button"
+                lang={language.value}
+                title={language.name}
+                aria-pressed={ws.locale === language.value}
+                disabled={!ws.ready}
+                onClick={() => ws.locale !== language.value && ws.setLocale(language.value).catch(() => undefined)}
+              >
+                {language.label}
+              </button>
+            ))}
+          </div>
           <div className="student-scope">
             <span className="avatar">
               {(ws.dashboard?.profile.display_name || "Demo student")
@@ -125,14 +150,14 @@ export function Shell({ children }: { children: React.ReactNode }) {
               <strong>
                 {ws.dashboard?.profile.display_name || "Your workspace"}
               </strong>
-              <small>{ws.t("demo")}</small>
+              <small>{signedIn ? ws.t("account") : ws.t("demo")}</small>
             </span>
           </div>
         </div>
       </aside>
       <div className="app-body">
         <div className="utility-bar">
-          <span className="breadcrumb">Your future, at your pace.</span>
+          <span className="breadcrumb">{ws.t("tagline")}</span>
           <form
             role="search"
             onSubmit={(e) => {
@@ -147,8 +172,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <Icon name="search" size={16} />
             <input
               ref={searchInput}
-              aria-label="Search colleges"
-              placeholder="Search colleges"
+              aria-label={ws.t("search")}
+              placeholder={ws.t("search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -195,9 +220,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           <div>
             <Link href="/privacy">Privacy</Link>
             <Link href="/data">Sources & coverage</Link>
-            <a href="/api-health" target="_blank" rel="noreferrer">
-              Service status
-            </a>
+            <Link href="/status">Service status</Link>
           </div>
         </footer>
       </div>

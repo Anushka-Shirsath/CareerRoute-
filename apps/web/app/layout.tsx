@@ -8,12 +8,27 @@ import "./college-search.css";
 import "./college-details.css";
 import "./shortlist.css";
 import "./auth.css";
+import "./status.css";
+import "./shell-extras.css";
 import { WorkspaceProvider } from "../src/context";
 
 export const metadata: Metadata = {
   title: "CareerQuest · Your next chapter",
   description:
     "Explore what comes after Class 10. Understand your marks, discover your interests, and find source-linked colleges across Maharashtra.",
+  metadataBase: new URL(
+    process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? "https://" + process.env.VERCEL_PROJECT_PRODUCTION_URL
+      : "http://127.0.0.1:3000",
+  ),
+  openGraph: {
+    title: "CareerQuest · Your next chapter",
+    description:
+      "Understand your marks, discover your interests, and find source-linked colleges across Maharashtra after Class 10.",
+    siteName: "CareerQuest",
+    type: "website",
+  },
+  twitter: { card: "summary_large_image" },
   manifest: "/manifest.webmanifest",
   icons: { icon: "/icon.svg", apple: "/icon.svg" },
 };

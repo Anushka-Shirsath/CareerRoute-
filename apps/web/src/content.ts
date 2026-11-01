@@ -291,6 +291,7 @@ export const labels: Record<Locale, Record<string, string>> = {
     estimate: "Your estimate",
     source: "View source",
     saved: "Saved",
+    finder: "College Fit",
   },
   mr: {
     home: "माझा प्रवास",
@@ -311,6 +312,7 @@ export const labels: Record<Locale, Record<string, string>> = {
     estimate: "तुमचा अंदाज",
     source: "स्रोत पाहा",
     saved: "जतन केले",
+    finder: "कॉलेज फिट",
   },
   hi: {
     home: "मेरी यात्रा",
@@ -331,6 +333,7 @@ export const labels: Record<Locale, Record<string, string>> = {
     estimate: "आपका अनुमान",
     source: "स्रोत देखें",
     saved: "सेव किया",
+    finder: "कॉलेज फ़िट",
   },
 };
 export const reportLabels: Record<Locale, Record<string, string>> = {

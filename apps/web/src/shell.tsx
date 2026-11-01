@@ -22,6 +22,7 @@ const navigation = [
   { label: "explore", href: "/explore", icon: "route" },
   { label: "compass", href: "/compass/report", icon: "compass" },
   { label: "colleges", href: "/colleges", icon: "graduate" },
+  { label: "finder", href: "/finder", icon: "sliders" },
   { label: "shortlist", href: "/shortlist", icon: "bookmark" },
   { label: "compare", href: "/compare", icon: "scale" },
   { label: "mentor", href: "/mentor", icon: "chat" },

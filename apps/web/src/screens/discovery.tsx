@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { api, write, query, numberOrNull } from "../api";
+import { CollegeFit } from "./college-fit";
 import { useData, useTask, useWorkspace } from "../context";
 import {
   criteriaLabels,
@@ -86,50 +87,6 @@ type CutoffOption = { academic_year: string; round: string; stage: string; seat_
 type CutoffSuggestion = { offering_id: string; name: string; program_name: string; district: string | null; choice_code: string; cutoff_percent: number; difference: number; source_url: string; reservation: string | null; academic_year: string; round: string; stage: string; seat_type: string };
 type CutoffSuggestions = { items: CutoffSuggestion[]; total: number; merit_percent: number; notice: string };
 
-type Recommendation = { offering_id: string; linkable: boolean; name: string; program_name: string; pathway_id: string; district: string | null; management: string | null; academic_year: string; first_round_percent: number; closing_percent: number; rounds: number; difference: number; source_url: string | null };
-type Band = "safe" | "possible" | "reach";
-type Recommendations = { percent: number; category_used: string; counts: Record<Band, number>; counts_capped: boolean; groups: Record<Band, Recommendation[]>; how_to_read: string; notice: string };
-const bandText: Record<Band, { title: string; note: string }> = {
-  safe: { title: "Safe options", note: "Your percentage is at or above their first-round cutoff." },
-  possible: { title: "Possible options", note: "Your percentage falls between their first-round and closing cutoffs." },
-  reach: { title: "Reach options", note: "Up to 5 points below their closing cutoff. Worth a try in later rounds." },
-};
-const recommendRoutes = pathways.filter(p => ["fyjc_science", "fyjc_commerce", "fyjc_arts", "polytechnic_diploma"].includes(p.id));
-
-function MarksRecommendations({ academic }: { academic: { aggregate: { value: number | null } } }) {
-  const task = useTask();
-  const [pathway, setPathway] = useState(""), [district, setDistrict] = useState(""), [percent, setPercent] = useState(academic.aggregate.value == null ? "" : String(academic.aggregate.value));
-  const [result, setResult] = useState<Recommendations | null>(null);
-  const run = () => task.run(async () => {
-    setResult(await write<Recommendations>("/recommendations", { percent: percent === "" ? null : Number(percent), pathway_id: pathway || null, districts: district ? [district] : [], limit: 10 }));
-  });
-  return <div className="marks-recommendations">
-    <fieldset className="cutoff-fields" disabled={task.busy}>
-      <div className="cutoff-inputs">
-        <Field label="Your percentage" hint="Filled in from your confirmed marks. You can change it to try another figure."><input type="number" min="0" max="100" step="0.01" value={percent} onChange={e => setPercent(e.target.value)} /></Field>
-        <Field label="Course"><select value={pathway} onChange={e => setPathway(e.target.value)}><option value="">All courses</option>{recommendRoutes.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>
-        <Field label="District"><select value={district} onChange={e => setDistrict(e.target.value)}><option value="">All of Maharashtra</option><DistrictOptions /></select></Field>
-      </div>
-    </fieldset>
-    <Button busy={task.busy} disabled={percent === "" || Number(percent) < 0 || Number(percent) > 100} onClick={run}>Show colleges I could get into</Button>
-    {task.error && <ErrorState message={task.error} />}
-    {result && <div className="cutoff-results" aria-live="polite">
-      <h3>Colleges for {result.percent}% based on past cutoffs</h3>
-      <p>{result.how_to_read} Category used: {result.category_used}. You can set your category in Filters below.</p>
-      {(["safe", "possible", "reach"] as Band[]).map(band => <section className="recommend-band" key={band}>
-        <h4>{bandText[band].title} <span className="muted">({fmt(result.counts[band])}{result.counts_capped && band === "safe" ? "+" : ""})</span></h4>
-        <p className="panel-note">{bandText[band].note}</p>
-        {result.groups[band].length === 0 && <p>No colleges in this group for these filters.</p>}
-        {result.groups[band].map(item => <article className="cutoff-result" key={item.offering_id}>
-          <div>{item.linkable ? <Link href={"/colleges/" + encodeURIComponent(item.offering_id)}><strong>{item.name}</strong></Link> : <strong>{item.name}</strong>}<p>{item.program_name} · {route(item.pathway_id)?.name || item.pathway_id} · {item.district || "District not provided"}</p><small>{item.academic_year} admissions · {item.rounds} {item.rounds === 1 ? "round" : "rounds"} on record{item.management ? ` · ${item.management}` : ""}</small></div>
-          <div><strong>Closing cutoff {item.closing_percent}%</strong><p>First round {item.first_round_percent}%</p>{item.source_url?.startsWith("https://") && <a href={item.source_url} target="_blank" rel="noopener noreferrer">View source ↗</a>}</div>
-        </article>)}
-      </section>)}
-      <p className="panel-note">{result.notice}</p>
-    </div>}
-  </div>;
-}
-
 function CutoffExplorer() {
   const ws = useWorkspace(), task = useTask();
   const { data, loading, error, reload } = useData<{ available: boolean; options: CutoffOption[] }>("/cutoff-options");
@@ -157,10 +114,9 @@ function CutoffExplorer() {
     setSuggestions(await write<CutoffSuggestions>("/cutoff-recommendations", { merit_percent: Number(percentage), verified_by_student: confirmed, academic_year: year, round, stage, seat_type: seat }));
   });
   return <section id="cutoff-explorer" className="cutoff-explorer" aria-labelledby="cutoff-explorer-title">
-    <div className="cutoff-intro"><h2 id="cutoff-explorer-title">Colleges you could get into</h2><p>We compare your confirmed marks with past Junior College (FYJC) and Polytechnic cutoffs and group colleges into safe, possible and reach options.</p></div>
+    <div className="cutoff-intro"><h2 id="cutoff-explorer-title">Exact-seat cutoff explorer</h2><p>Compare one historical Polytechnic seat code with your checked merit percentage.</p></div>
     {!academic ? <p>Upload or enter your marksheet and confirm it first. <Link href="/start">Review your marks</Link></p> : <>
-      <MarksRecommendations academic={academic} />
-      <details className="cutoff-advanced"><summary>Advanced: compare with one exact Polytechnic seat code</summary>
+      <div className="cutoff-advanced">
       {loading && <Loading lines={2}/>}{error && <ErrorState message={error} retry={reload}/>}
       {data && !data.available && <Notice>Historical cutoff data is not available on this server.</Notice>}
       {data?.available && <>
@@ -179,7 +135,7 @@ function CutoffExplorer() {
         {task.error && <ErrorState message={task.error}/>}
       </>}
     {suggestions && <div className="cutoff-results" aria-live="polite"><h3>{fmt(suggestions.total)} courses to investigate</h3><p>Past cutoff at or below {suggestions.merit_percent}%. Showing up to 50, closest first. Check each course and seat type in the source.</p>{suggestions.items.length === 0 && <p>No matching historical records were found for these selections.</p>}{suggestions.items.map(item => <article className="cutoff-result" key={item.offering_id}><div><Link href={'/colleges/' + encodeURIComponent(item.offering_id)}><strong>{item.name}</strong></Link><p>{item.program_name} · {item.district || 'District not provided'}</p><small>{item.academic_year} · Round {item.round} · {item.stage} · {item.seat_type}{item.reservation ? ` · ${item.reservation}` : ''}</small></div><div><strong>{item.cutoff_percent}% past cutoff</strong><p>{item.difference === 0 ? "Same as your entry" : `${item.difference.toFixed(2)} percentage points below your entry`}</p><a href={item.source_url} target="_blank" rel="noopener noreferrer">View source ↗</a></div></article>)}</div>}
-      </details>
+      </div>
     </>}
   </section>;
 }
@@ -403,15 +359,16 @@ export function FinderPage() {
   return (
     <>
       <PageHeader
-        title="Find your kind of place"
-        description="Start with your practical needs. Eligibility, historical records and your preferences stay separate."
+        title="Find your college fit"
+        description="Start with a percentage and location, then explore the details that matter to you."
         action={
           <ActionLink href="/colleges" variant="text">
             Browse the directory
           </ActionLink>
         }
       />
-      <CutoffExplorer />
+      <CollegeFit />
+      <details className="college-fit-advanced"><summary>Advanced: compare an exact Polytechnic seat</summary><CutoffExplorer /></details>
       <div className="grid finder-grid">
         <Panel
           className={

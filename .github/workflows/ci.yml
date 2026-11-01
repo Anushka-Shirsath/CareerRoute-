@@ -16,6 +16,7 @@ jobs:
       TEST_POSTGRES_URL: postgresql://postgres:test-only-password@localhost:5432/postgres
     steps:
       - uses: actions/checkout@v4
+        with: {fetch-depth: 0}  # gitleaks scans the pull request's commit range, which a shallow clone lacks
       - uses: actions/setup-python@v5
         with: {python-version: '3.11', cache: pip, cache-dependency-path: services/api/requirements.lock.txt}
       - run: pip install -r services/api/requirements.lock.txt

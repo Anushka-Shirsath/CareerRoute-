@@ -12,6 +12,7 @@ const tanker = localFont({ src: "../../public/fonts/tanker-regular.woff2", varia
 type Phase = "ready" | "build" | "rush" | "results";
 type FestivalRecord = { best: number; festivals: number };
 const emptyRecord: FestivalRecord = { best: 0, festivals: 0 };
+const visitorLines = ["Is this the robot queue?", "I only came for snacks.", "My aunty sent me.", "Is there free wifi?", "I heard there is a dance-off!"];
 const visitorPositions = [{ x: 22, y: 53 }, { x: 69, y: 62 }, { x: 44, y: 42 }, { x: 21, y: 64 }, { x: 74, y: 36 }];
 
 function Coin() {
@@ -171,7 +172,7 @@ export function FestivalHunt({ onContinue }: { onContinue: () => void }) {
           {phase === "ready" && <div className="festival-start-sign"><span className="festival-sign-star" aria-hidden="true">✷</span><strong>Good times<br />start here.</strong><p>12 tokens. 4 plots. One big idea.</p><button className="festival-primary" onClick={() => reset(0)}>Let’s build a festival <span aria-hidden="true">↗</span></button><span className="festival-start-note">Three little challenges. No pressure.</span></div>}
           {phase === "rush" && <>
             <div className="festival-rush-clock"><strong>{seconds}s</strong><span>Crowd rush</span></div>
-            <button ref={visitorButton} className="festival-visitor" onClick={() => welcome(greeted)} style={{ left: `${visitorPositions[Math.min(greeted, 4)].x}%`, top: `${visitorPositions[Math.min(greeted, 4)].y}%` }} aria-label={`Welcome visitor ${Math.min(greeted + 1, 5)} of 5, plus 2 visitors`}><span>Hey, over here! <b>+2</b></span><VisitorArt index={greeted} /></button>
+            <button ref={visitorButton} className="festival-visitor" onClick={() => welcome(greeted)} style={{ left: `${visitorPositions[Math.min(greeted, 4)].x}%`, top: `${visitorPositions[Math.min(greeted, 4)].y}%` }} aria-label={`Welcome visitor ${Math.min(greeted + 1, 5)} of 5, plus 2 visitors`}><span>{visitorLines[Math.min(greeted, 4)]} <b>+2</b></span><VisitorArt index={greeted} /></button>
           </>}
           {phase === "results" && <div className="festival-confetti" aria-hidden="true">{Array.from({ length: 22 }, (_, i) => <i key={i} style={{ "--i": i, left: `${4 + (i * 17) % 91}%`, backgroundColor: ["#D88263", "#D5AD50", "#709E86", "#B67F98"][i % 4] } as CSSProperties} />)}</div>}
           {phase === "build" && <div className="festival-map-tip">{selected.length === 0 ? "Pick your first attraction below ↓" : selected.length === 4 ? "Your lineup is ready. Open the gates!" : `${4 - selected.length} open plots. What’s next?`}</div>}
@@ -188,6 +189,7 @@ export function FestivalHunt({ onContinue }: { onContinue: () => void }) {
           <p>{won ? "You brought the town together." : "Try a featured booth or a pair bonus to bring a bigger crowd."}</p>
           <div className="festival-result-number">{visitors}<span>happy visitors</span></div>
           {newBest && <p className="festival-new-best">A new personal best. Nicely done!</p>}
+          <div className="festival-jobs"><h3>Behind your booths: real jobs</h3><ul>{BOOTHS.filter((booth) => selected.includes(booth.id)).map((booth) => <li key={booth.id}><strong>{booth.name}</strong>{booth.job}</li>)}</ul></div>
         </div> : <div className="festival-challenge-copy"><h2>{challenge.name}</h2><p>{challenge.description}</p><div className="festival-goal"><strong>{challenge.goal}</strong><span>visitors to<br />make the day</span></div></div>}
 
         <div className="festival-goal-progress"><div className="festival-meter" role="progressbar" aria-label="Visitor goal" aria-valuemin={0} aria-valuemax={challenge.goal} aria-valuenow={Math.min(visitors, challenge.goal)} aria-valuetext={`${visitors} of ${challenge.goal} visitors`}><span style={{ width: `${Math.min(100, visitors / challenge.goal * 100)}%` }} /></div><span>{visitors >= challenge.goal ? "Goal reached. Keep the good times coming!" : `${challenge.goal - visitors} more visitors to your goal`}</span></div>

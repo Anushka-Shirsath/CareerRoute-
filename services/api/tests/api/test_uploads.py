@@ -233,6 +233,27 @@ def test_image_marksheet_upload_extracts_draft(client, format_name, mime):
     assert result.json()['data']['confirmation_state'] == 'draft'
 
 
+@pytest.mark.skipif(sys.platform != 'darwin', reason='macOS Vision OCR only')
+def test_tilted_phone_photo_keeps_each_subject_on_its_row():
+    from PIL import Image, ImageDraw, ImageFilter, ImageFont
+    from app.pdf_extract import document_as_pdf
+    font = ImageFont.truetype('/System/Library/Fonts/Supplemental/Arial.ttf', 52)
+    image = Image.new('RGB', (1600, 1000), 'white')
+    draw = ImageDraw.Draw(image)
+    draw.text((80, 60), 'Subject          Maximum        Obtained', font=font, fill='black')
+    marks = [('English', 75), ('Marathi', 81), ('Hindi', 68), ('Mathematics', 90), ('Science', 88), ('Social Science', 79)]
+    for i, (name, value) in enumerate(marks):
+        draw.text((80, 170 + i * 120), name, font=font, fill='black')
+        draw.text((760, 170 + i * 120), '100', font=font, fill='black')
+        draw.text((1200, 170 + i * 120), str(value), font=font, fill='black')
+    # A slight tilt used to pair each subject with the next row's marks.
+    image = image.rotate(2.5, expand=True, fillcolor=(120, 120, 120)).filter(ImageFilter.GaussianBlur(1.2))
+    buffer = io.BytesIO()
+    image.save(buffer, format='JPEG', quality=70)
+    subjects, _ = extract_pdf(document_as_pdf(buffer.getvalue(), 'image/jpeg'))
+    assert [(s['name_as_shown'], s['obtained']) for s in subjects] == [(n, float(v)) for n, v in marks]
+
+
 def test_upload_rejects_wrong_magic_bytes(client):
     content = b'<html>fake.pdf</html>'
     signed = client.post(P + '/results/upload-url', json={'mime': 'application/pdf', 'size': len(content)}).json()['data']

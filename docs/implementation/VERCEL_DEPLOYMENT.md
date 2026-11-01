@@ -45,7 +45,7 @@ Set these in the API project. Never paste secrets into chat or commit them.
 | `MENTOR_ENABLED` | `true`, or `false` to run without the AI mentor |
 | `GROQ_API_KEY` | Your Groq key (optional) |
 | `GROQ_CHAT_MODEL` | `openai/gpt-oss-120b` |
-| `AUTH_ENABLED` | Leave unset (off). See the account sign-in notes before turning it on |
+| `AUTH_ENABLED` | `true` to turn on account sign-in, with `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`. Leave unset to keep it off. See the account sign-in notes in [services and setup](SERVICES_AND_SETUP.md) first |
 
 ## Web environment variable
 

@@ -26,7 +26,7 @@ export function MentorWidget() {
     setBusy(true); setError(""); setText("");
     setMessages((old) => [...old, { role: "user", content: message.trim() }]);
     try {
-      const result = await write<ChatMessage & { reply: string }>("/mentor/chat", { message: message.trim(), locale: "en", page_path: path, provider_consent: providerConsent, ...(proposalId ? { confirm_preference_change_id: proposalId } : {}) });
+      const result = await write<ChatMessage & { reply: string }>("/mentor/chat", { message: message.trim(), locale: ws.locale, page_path: path, provider_consent: providerConsent, ...(proposalId ? { confirm_preference_change_id: proposalId } : {}) });
       setMessages((old) => [...old, { ...result, role: "assistant", content: result.reply }]);
       if (proposalId) await ws.refresh();
     } catch (e) { setError(errorText(e)); setText(message); }
@@ -53,6 +53,6 @@ export function MentorWidget() {
       </form>
       <div className="mentor-widget-footer"><span>Check sources before deciding.</span><Link href="/mentor">Full conversation ↗</Link></div>
     </section>}
-    <button className="mentor-widget-trigger" type="button" aria-expanded={open} onClick={() => setOpen(!open)}><Icon name={open ? "close" : "chat"} size={19} />{open ? "Close" : "Ask mentor"}</button>
+    <button className="mentor-widget-trigger" type="button" aria-expanded={open} onClick={() => setOpen(!open)}><Icon name={open ? "close" : "chat"} size={19} /><span className="mentor-widget-label">{open ? ws.t("close") : ws.t("ask")}</span></button>
   </div>;
 }

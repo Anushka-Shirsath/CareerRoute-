@@ -12,7 +12,7 @@ test('student can confirm marks, save offerings, compare costs and revoke a sele
   await page.getByRole('button', {name:'Confirm my result'}).click();
   await expect(page.getByRole('heading',{name:'Your academic snapshot',exact:true})).toBeVisible();
   await page.goto('/colleges?pathway=polytechnic_diploma');
-  await page.getByLabel('Filter by academic year').selectOption('2026-27');
+  await page.getByRole('combobox',{name:'Academic year'}).selectOption('2026-27');
   const rows = page.locator('.college-row');
   await expect(rows.first()).toBeVisible();
   for (let i=0;i<2;i++) {
@@ -20,11 +20,15 @@ test('student can confirm marks, save offerings, compare costs and revoke a sele
     await rows.nth(i).getByRole('button',{name:'Compare',exact:true}).click();
   }
   await page.goto('/shortlist');
-  await expect(page.locator('.saved-offering')).toHaveCount(2);
-  await page.getByRole('textbox',{name:'A private note'}).first().fill('Private note from browser check');
-  await page.getByRole('button',{name:'Save progress'}).first().click();
+  await expect(page.locator('.shortlist-course')).toHaveCount(2);
+  const first = page.locator('.shortlist-course').first();
+  await first.locator('.shortlist-notes summary').click();
+  await first.getByRole('textbox',{name:/^Private note for /}).fill('Private note from browser check');
+  await first.getByRole('button',{name:'Save notes & progress'}).click();
+  await expect(first.getByText('All changes saved')).toBeVisible();
   await page.reload();
-  await expect(page.getByRole('textbox',{name:'A private note'}).first()).toHaveValue('Private note from browser check');
+  await page.locator('.shortlist-course').first().locator('.shortlist-notes summary').click();
+  await expect(page.locator('.shortlist-course').first().getByRole('textbox',{name:/^Private note for /})).toHaveValue('Private note from browser check');
   await page.goto('/compare');
   await page.getByRole('button',{name:'Calculate & save comparison'}).click();
   await expect(page.getByText('None verified',{exact:true}).first()).toBeVisible();
@@ -112,13 +116,16 @@ test('floating mentor sends the current screen with the question', async ({page}
   await page.request.delete('/api/v1/me');
 });
 
-test('finder explains the missing district and can search statewide', async ({page}) => {
+test('finder searches statewide when a district has no match and opens a course', async ({page}) => {
   await page.goto('/finder');
-  await expect(page.getByRole('button',{name:'Search all districts'})).toBeVisible();
-  await page.getByRole('button',{name:'Search all districts'}).click();
-  await expect(page.locator('.college-row').first()).toBeVisible({timeout:45000});
-  await page.locator('.college-row').first().getByRole('link',{name:/View details/}).click();
-  await expect(page.getByRole('heading',{name:'What the sources tell us'})).toBeVisible();
+  const statewide = page.getByRole('button',{name:'Search all districts'});
+  const rows = page.locator('.college-row');
+  // Whether the saved district has matches depends on the live catalogue.
+  await expect(statewide.or(rows.first())).toBeVisible({timeout:45000});
+  if (await statewide.isVisible()) await statewide.click();
+  await expect(rows.first()).toBeVisible({timeout:45000});
+  await rows.first().getByRole('link',{name:/View details/}).click();
+  await expect(page.getByRole('heading',{name:'The course at a glance'})).toBeVisible();
   await expect(page.getByText('Not verified',{exact:true}).first()).toBeVisible();
 });
 
@@ -136,8 +143,8 @@ test('sample PDF creates a reviewable draft and mobile navigation works',async (
   await page.goto('/');
   await page.getByRole('button',{name:'Open navigation'}).click();
   await page.getByRole('link',{name:'My marks',exact:true}).click();
-  await page.getByRole('tab',{name:/PDF/}).click();
-  await page.getByLabel('Sample PDF').setInputFiles(path.join(__dirname,'fixtures','sample.pdf'));
+  await page.getByRole('tab',{name:'Upload a file'}).click();
+  await page.getByLabel('Sample marksheet file').setInputFiles(path.join(__dirname,'fixtures','sample.pdf'));
   await page.getByRole('button',{name:/Extract/}).click();
   await expect(page.getByRole('heading',{name:'Review your result'})).toBeVisible();
   await expect(page.getByLabel('Subject 1 obtained marks')).toHaveValue('84');

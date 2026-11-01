@@ -49,6 +49,20 @@ class ManualResult(Input):
         return self
 
 
+class DeviceReadResult(Input):
+    """Marks read from a marksheet on the student's own device. The file stays there."""
+    board: Board
+    exam_year: int = Field(ge=2000, le=2100)
+    subjects: SubjectList
+
+    @model_validator(mode='after')
+    def extracted_and_unique(self):
+        if any(s.source != 'extracted' for s in self.subjects):
+            raise ValueError('Device-read subjects must be marked as extracted.')
+        unique_subjects(self.subjects)
+        return self
+
+
 class ConfirmResult(Input):
     confirm: Literal[True]
     subjects: SubjectList | None = None

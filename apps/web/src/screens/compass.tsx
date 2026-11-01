@@ -19,6 +19,7 @@ import {
 } from "../ui";
 import type { Compass, GameSession, GameNode } from "../types";
 import { FestivalHunt } from "./festival-hunt";
+import { Bolt, intros, reactionFor, roles, scenes, type Dimension } from "./compass-fun";
 
 const sequence = [
   "S1",
@@ -185,6 +186,22 @@ export function CompassPlayPage() {
     "Secure the loose connection",
     "Switch on and test",
   ];
+  const picked =
+    node && (node.type === "choice" || node.type === "multi_select") && options.length
+      ? node.options.find((o) => o.id === options[options.length - 1])
+      : undefined;
+  const reaction = picked ? reactionFor(picked.id, picked.tags) : null;
+  const boltLine = reaction
+    ? reaction.line
+    : node?.type === "rating" && rating
+      ? rating >= 4
+        ? "A high score! Bolt is doing a small happy spin."
+        : rating <= 2
+          ? "Fair enough. Knowing what you don't enjoy is useful too."
+          : "Somewhere in the middle. Very honest. Bolt respects that."
+      : node
+        ? intros[node.id] || ""
+        : "";
   if (showHunt) return <FestivalHunt onContinue={() => setShowHunt(false)} />;
   return (
     <>
@@ -241,15 +258,16 @@ export function CompassPlayPage() {
             </div>
             <Panel>
               <p className="game-context">
-                {node.type === "values"
-                  ? "What matters to you"
-                  : node.type === "rating"
-                    ? "A moment to reflect"
-                    : node.type === "minitask"
-                      ? "Try something different"
-                      : "Your school festival is coming together"}{" "}
-                · {sequence.indexOf(node.id) + 1} of 10
+                {scenes[node.id] || "Your school festival"} ·{" "}
+                {sequence.indexOf(node.id) + 1} of 10
               </p>
+              <div className="bolt-row" aria-live="polite">
+                <Bolt mood={reaction || (rating && rating >= 4) ? "happy" : "idle"} />
+                <p className="bolt-bubble">
+                  <strong>Bolt</strong>
+                  {boltLine}
+                </p>
+              </div>
               <h2 className="game-question" tabIndex={-1} aria-live="polite">
                 {node.text}
               </h2>
@@ -295,6 +313,12 @@ export function CompassPlayPage() {
                     </p>
                   )}
                 </>
+              )}
+              {reaction && node.type === "choice" && (
+                <p className="job-alert">
+                  <span>Real job alert</span>
+                  {reaction.peek}
+                </p>
               )}
               {node.type === "rating" && (
                 <>
@@ -557,6 +581,40 @@ export function CompassReportPage() {
                   : "Interests and academic readiness are shown separately."}
             </span>
           </div>
+          {(() => {
+            const best = [...data.dimensions]
+              .filter((d) => d.observations > 0 && d.code in roles)
+              .sort((a, b) => b.evidence - a.evidence)[0];
+            if (!best) return null;
+            const role = roles[best.code as Dimension];
+            return (
+              <section className="festival-role" aria-labelledby="festival-role-title">
+                <Bolt mood="happy" />
+                <div>
+                  <p className="festival-role-kicker">Your festival role this time</p>
+                  <h2 id="festival-role-title">{role.title}</h2>
+                  <p>{role.line}</p>
+                  <p className="festival-role-label">Real jobs that run on this</p>
+                  <ul className="festival-role-jobs">
+                    {role.jobs.map((job) => (
+                      <li key={job}>{job}</li>
+                    ))}
+                  </ul>
+                  <div className="actions">
+                    {role.routes.map((id) => (
+                      <ActionLink key={id} href={"/explore/" + id} variant="text">
+                        {route(id)?.short || id}
+                      </ActionLink>
+                    ))}
+                  </div>
+                  <p className="festival-role-note">
+                    A role from one festival, not a label for life. Play again
+                    and you might be someone else.
+                  </p>
+                </div>
+              </section>
+            );
+          })()}
           <div className="grid">
             <Panel
               className="span-8"
@@ -587,8 +645,8 @@ export function CompassReportPage() {
                   )}
                   {r.why.length > 0 ? (
                     <ul>
-                      {r.why.map((item, i) => (
-                        <li key={i}>{item.text}</li>
+                      {[...new Set(r.why.map((item) => item.text))].map((text) => (
+                        <li key={text}>{text}</li>
                       ))}
                     </ul>
                   ) : (

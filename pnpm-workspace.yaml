@@ -1,2 +1,5 @@
 packages:
   - apps/*
+# tesseract.js only prints a donation message after install, so its script stays off.
+allowBuilds:
+  tesseract.js: false

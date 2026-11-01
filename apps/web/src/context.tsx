@@ -77,7 +77,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       api<Page<Result>>("/results?limit=50"),
     ]);
     setDashboard(dash);
-    setLocaleValue("en");
+    setLocaleValue(dash.profile.locale || "en");
     setDraft(
       [...results.items]
         .reverse()

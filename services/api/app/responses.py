@@ -56,7 +56,7 @@ class ResultView(Output):
     exam_year: int
     result_type: Literal['official', 'provisional', 'manual']
     confirmation_state: Literal['draft', 'confirmed', 'superseded']
-    extraction_method: Literal['manual', 'pdf_text', 'image_vision']
+    extraction_method: Literal['manual', 'pdf_text', 'image_vision', 'device_ocr']
     revision: int
     subjects: list[Subject]
     is_synthetic: bool

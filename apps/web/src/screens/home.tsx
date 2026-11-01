@@ -29,89 +29,16 @@ export function HomePage() {
   return (
     <>
       <header className="home-hero">
-        <h1>Your next chapter, your way.</h1>
-        <p>Explore your interests, discover your options, and make a plan for what comes after Class 10.</p>
+        <h1>{ws.t("hero_title")}</h1>
+        <p>{ws.t("hero_text")}</p>
       </header>
       <div className="demo-line">
         <Tag>{ws.t("demo")}</Tag>
         <span>
-          {ws.t("sample")} · Your choices stay in this browser’s private workspace.
+          {ws.t("sample")} · {ws.t("private")}
         </span>
       </div>
-      <section className="home-activities" aria-labelledby="activities-heading">
-        <h2 id="activities-heading">Your activities</h2>
-        <div className="home-activity-grid">
-          <Link href="/colleges" className="home-activity activity-colleges">
-            <span className="activity-kicker">Find your place</span>
-            <strong>Explore colleges</strong>
-            <span className="activity-arrow" aria-hidden="true">↗</span>
-          </Link>
-          <Link href="/explore" className="home-activity activity-pathways">
-            <span className="activity-kicker">Discover what’s next</span>
-            <strong>Explore pathways</strong>
-            <span className="activity-arrow" aria-hidden="true">↗</span>
-          </Link>
-        </div>
-      </section>
-      <h2 className="home-section-heading">Your journey so far</h2>
-      <div className="journey-strip" role="group" aria-label="Your exploration progress">
-        {[
-          {
-            label: "Your marks",
-            value: academic
-              ? "Confirmed"
-              : ws.draft
-                ? "Ready to review"
-                : "Not entered",
-            detail: academic
-              ? `${academic.subjects.length} subjects saved`
-              : ws.draft
-                ? `${ws.draft.subjects.length} sample subjects`
-                : "Start with a sample result",
-            href: academic ? "/snapshot" : ws.draft ? "/start/review" : "/start",
-            done: !!academic,
-          },
-          {
-            label: "Your interests",
-            value: d.compass_summary ? "Explored" : "Open to explore",
-            detail: d.compass_summary
-              ? "Your Compass is ready"
-              : "A short, optional mission",
-            href: d.compass_summary ? "/compass/report" : "/compass/play",
-            done: !!d.compass_summary,
-          },
-          {
-            label: "Your shortlist",
-            value: `${d.shortlist.length} saved`,
-            detail: d.shortlist.length
-              ? "Keep your options together"
-              : "A space for your possibilities",
-            href: "/shortlist",
-            done: d.shortlist.length > 0,
-          },
-          {
-            label: "Your plan",
-            value: `${completed} of ${d.next_steps.length}`,
-            detail: "Preparation steps completed",
-            href: "/dashboard#next-steps",
-            done: d.next_steps.length > 0 && completed === d.next_steps.length,
-          },
-        ].map((step) => (
-          <div className="journey-step" key={step.label}>
-            <Link href={step.href}>
-              <span className="journey-label">
-                <span
-                  className={"journey-status " + (step.done ? "complete" : "")}
-                />
-                {step.label}
-              </span>
-              <strong>{step.value}</strong>
-              <p>{step.detail}</p>
-            </Link>
-          </div>
-        ))}
-      </div>
-      <div className="grid home-grid stretch">
+      <div className="grid home-grid home-lead stretch">
         <Panel className="span-9 next-panel">
           <div className="actions spaced">
             <h2>
@@ -181,7 +108,7 @@ export function HomePage() {
             />
             <path d="M40 3v10m0 54v10M3 40h10m54 0h10" stroke="currentColor" />
             <path d="m50 26-6 18-18 6 6-18Z" fill="currentColor" />
-            <circle cx="40" cy="40" r="3" fill="#f4f6f2" />
+            <circle cx="40" cy="40" r="3" className="compass-motif-hub" />
           </svg>
           <p>
             Build a school festival. Make a few choices. Notice what you enjoy.
@@ -193,6 +120,66 @@ export function HomePage() {
             {d.compass_summary ? "See my Compass" : "Try Career Compass"}
           </ActionLink>
         </Panel>
+      </div>
+      <h2 className="home-section-heading">{ws.t("journey")}</h2>
+      <div className="journey-strip" role="group" aria-label="Your exploration progress">
+        {[
+          {
+            label: ws.t("j_marks"),
+            value: academic
+              ? "Confirmed"
+              : ws.draft
+                ? "Ready to review"
+                : "Not entered",
+            detail: academic
+              ? `${academic.subjects.length} subjects saved`
+              : ws.draft
+                ? `${ws.draft.subjects.length} sample subjects`
+                : "Start with a sample result",
+            href: academic ? "/snapshot" : ws.draft ? "/start/review" : "/start",
+            done: !!academic,
+          },
+          {
+            label: ws.t("j_interests"),
+            value: d.compass_summary ? "Explored" : "Open to explore",
+            detail: d.compass_summary
+              ? "Your Compass is ready"
+              : "A short, optional mission",
+            href: d.compass_summary ? "/compass/report" : "/compass/play",
+            done: !!d.compass_summary,
+          },
+          {
+            label: ws.t("j_shortlist"),
+            value: `${d.shortlist.length} saved`,
+            detail: d.shortlist.length
+              ? "Keep your options together"
+              : "A space for your possibilities",
+            href: "/shortlist",
+            done: d.shortlist.length > 0,
+          },
+          {
+            label: ws.t("j_plan"),
+            value: `${completed} of ${d.next_steps.length}`,
+            detail: "Preparation steps completed",
+            href: "/dashboard#next-steps",
+            done: d.next_steps.length > 0 && completed === d.next_steps.length,
+          },
+        ].map((step) => (
+          <div className="journey-step" key={step.label}>
+            <Link href={step.href}>
+              <span className="journey-label">
+                <span
+                  className={"journey-status " + (step.done ? "complete" : "")}
+                />
+                {step.label}
+              </span>
+              <strong>{step.value}</strong>
+              <p>{step.detail}</p>
+            </Link>
+          </div>
+        ))}
+      </div>
+      <div className="grid home-grid stretch">
         <Panel
           className="span-7"
           title="Six routes. Yours to choose."

@@ -5,6 +5,9 @@ from app.db import initialize, make_engine, transaction
 from app.main import create_app
 from app.models import AdmissionCycle, Cutoff, Fee, Institution, Offering, Source
 
+# Tests run on their own settings, never on a developer's local .env.
+Settings.model_config['env_file'] = None
+
 
 @pytest.fixture
 def engine(tmp_path):

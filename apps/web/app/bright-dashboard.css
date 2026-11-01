@@ -85,3 +85,4 @@ body, .app-shell, .app-body, .sidebar, .mobile-bar { background: #eef0f1; }
 .master-evidence-row p, .master-evidence-row small { color: #505c68; font-size: 13px; margin: 4px 0; }
 .master-evidence-row a { white-space: nowrap; color: #214aa9; font-weight: 600; }
 @media(max-width:600px) { .master-evidence-row { flex-direction: column; gap: 4px; } }
+.compass-motif-hub { fill: #c9eee1; }

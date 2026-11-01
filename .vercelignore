@@ -1,0 +1,23 @@
+# Files the Vercel CLI must never upload from this repository.
+.env
+.env.*
+!.env.example
+.venv/
+node_modules/
+.next/
+.vercel/
+data/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.db
+*.db-shm
+*.db-wal
+*.zip
+*.docx
+*.tsbuildinfo
+playwright-report/
+test-results/
+.taste-skill/
+services/api/tests/

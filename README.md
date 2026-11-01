@@ -1,12 +1,14 @@
 # CareerQuest
 
+**Live demo:** [careerquest-web.vercel.app](https://careerquest-web.vercel.app) · [service status](https://careerquest-web.vercel.app/status) · API [careerquest-api.vercel.app](https://careerquest-api.vercel.app/health)
+
 **Real-student launch is not yet enabled.** See [real-student readiness](docs/implementation/REAL_STUDENT_READINESS.md) for the remaining privacy, deployment and verification work. Use synthetic marksheets until that work is complete.
 
-Next.js student website and FastAPI backend built from the supplied planning pack and PostgreSQL dump. The frontend provides responsive marks review, academic snapshots, Career Compass, pathway guides, college discovery, personalised search, shortlists, cost comparison, mentor chat, parent reports, data coverage and privacy controls. Visitors use an anonymous demo workspace without login. New guest workspaces start with clearly labelled synthetic sample marks, which must be explicitly confirmed.
+Next.js student website and FastAPI backend built from the supplied planning pack and PostgreSQL dump. The frontend provides responsive marks review, academic snapshots, Career Compass, pathway guides, college discovery, personalised search, shortlists, cost comparison, mentor chat, parent reports, data coverage and privacy controls. Visitors start in an anonymous demo workspace; optional email and password accounts (with password reset) are available when `AUTH_ENABLED=true`, as on the live demo. The menu, home page and mentor replies switch between English, Marathi and Hindi from the sidebar. New guest workspaces start with clearly labelled synthetic sample marks, which must be explicitly confirmed.
 
 Implemented: confirmed result revisions and academic summaries; deterministic Career Compass; source-linked college directory; eligibility, historical comparison and preference ranking as separate outputs; costs and shortlists; dashboard and admission guides; optional Groq mentor with tools, confirmation before preference changes, memory controls and fallback; immutable section-selected parent reports with expiring/revocable links; offline staged imports; PostgreSQL row isolation; generated TypeScript contracts and CI.
 
-This workspace now uses **Supabase PostgreSQL** through the restricted server-side `cq_api` login in `.env`. All 15 tables and 711,426 rows at cutover were copied and checksum-verified; the local SQLite database and cutover backup remain available. The website/API still run on this computer. See [migration evidence](docs/evidence/supabase_migration.md) and [setup instructions](docs/implementation/SERVICES_AND_SETUP.md). A fresh checkout without `DATABASE_URL` continues to use SQLite.
+This workspace now uses **Supabase PostgreSQL** through the restricted server-side `cq_api` login in `.env`. All 15 tables and 711,426 rows at cutover were copied and checksum-verified; the local SQLite database and cutover backup remain available. The website and API are hosted on Vercel; they also run on this computer. See [migration evidence](docs/evidence/supabase_migration.md) and [setup instructions](docs/implementation/SERVICES_AND_SETUP.md). A fresh checkout without `DATABASE_URL` continues to use SQLite.
 
 The v11.1 master and both v12 supplements now live in the private `cq_master_v11` schema. Import row counts were checked for every table. The old duplicated cutoff table was backed up and replaced with a restricted compatibility view; guest workspaces were retained. Verified Polytechnic districts are sourced from the master. The two crosswalk supplements disagree on 15 purportedly confirmed pairs; only the 55 pairs present in both are used for fee links. The [disagreement list](data/coverage/v12_crosswalk_disagreements.csv) is available for review. Fee-order rows are history, not automatically current program fees; unverified cutoff units and attributed reviews remain labelled.
 
@@ -107,7 +109,7 @@ flowchart LR
   CLI[Offline import / review CLI] --> DB
 ```
 
-Student aggregates are versioned JSON records behind owner filters and database RLS. Catalogue facts and 633k historical records are relational and indexed. The API role can switch only to public, student and narrowly scoped session/share roles; it cannot publish catalogue changes. Account sign-in is disabled in demo mode; existing account records are retained. [Implementation decisions](docs/implementation/DECISIONS.md), [OpenAPI](docs/openapi.json), [generated TypeScript schema](packages/api-client/schema.d.ts), [typed fetch client](packages/api-client/client.ts).
+Student aggregates are versioned JSON records behind owner filters and database RLS. Catalogue facts and 633k historical records are relational and indexed. The API role can switch only to public, student and narrowly scoped session/share roles; it cannot publish catalogue changes. Account sign-in is controlled by `AUTH_ENABLED` and uses Supabase Auth behind server-side, revocable session cookies. [Implementation decisions](docs/implementation/DECISIONS.md), [OpenAPI](docs/openapi.json), [generated TypeScript schema](packages/api-client/schema.d.ts), [typed fetch client](packages/api-client/client.ts).
 
 ```powershell
 .\.venv\Scripts\python.exe scripts/export_openapi.py
@@ -135,7 +137,7 @@ The full-data validation command needs the private supplied dataset; CI tests us
 
 ## What remains outside this backend phase
 
-Website design and pages, a deployed URL, live Groq evaluation after key setup, reviewed missing source details, human review of Marathi/Hindi text, and any future real-student consent flow. Voice, additional missions, scholarship checks and guardian accounts retain the planning pack's later-phase status.
+Live Groq evaluation after key setup, reviewed missing source details, human review of Marathi/Hindi text (only the menu, home page top and mentor are translated so far), and any future real-student consent flow. Voice, additional missions, scholarship checks and guardian accounts retain the planning pack's later-phase status.
 
 Scanned PDF, PNG and JPEG extraction runs locally on the API server. Windows uses Windows OCR, macOS uses the Vision framework through the Swift command-line tools, and Linux requires Tesseract with English language data installed and available on `PATH`. OCR returns a draft: users must check and confirm the extracted marks. This remains a demo for synthetic marksheets; production handling of real student documents requires the outstanding consent and deployment work.
 

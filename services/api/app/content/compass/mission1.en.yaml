@@ -6,18 +6,18 @@
     {
       "id": "S1",
       "type": "choice",
-      "text": "Your school's Innovation Festival is in 4 days. Your team needs you. What do you grab first?",
+      "text": "Your school's Innovation Festival is in 4 days. The team group chat has 147 unread messages. What do you grab first?",
       "options": [
         {
           "id": "S1.a",
-          "text": "The toolbox. Someone has to build the model.",
+          "text": "The toolbox. Someone has to build this thing.",
           "tags": {
             "PM": 1
           }
         },
         {
           "id": "S1.b",
-          "text": "The budget sheet. Let us see what we can afford.",
+          "text": "The budget sheet. Let's see what we can actually afford.",
           "tags": {
             "EN": 1
           }
@@ -31,14 +31,14 @@
         },
         {
           "id": "S1.d",
-          "text": "The team list. I will make sure everyone knows their job.",
+          "text": "The team list. Everyone gets a job, including the person who never replies.",
           "tags": {
             "SO": 1
           }
         },
         {
           "id": "S1.e",
-          "text": "The judging rules. Let us find out what they score.",
+          "text": "The judging rules. Let's find out what they actually score.",
           "tags": {
             "AN": 1
           }
@@ -48,39 +48,39 @@
     {
       "id": "S2",
       "type": "choice",
-      "text": "The night before, your working model stops working.",
+      "text": "The night before, your working model stops working. It made a small sad noise and then nothing.",
       "options": [
         {
           "id": "S2.a",
-          "text": "Test each part one by one until I find the fault.",
+          "text": "Test each part one by one until I find the culprit.",
           "tags": {
             "AN": 1
           }
         },
         {
           "id": "S2.b",
-          "text": "Rebuild it fast with spare parts.",
+          "text": "Rebuild it fast with spare parts and a lot of tape.",
           "tags": {
             "PM": 1
           }
         },
         {
           "id": "S2.c",
-          "text": "Switch to a poster and short video that shows the idea.",
+          "text": "Switch to a poster and a short video that still shows the idea.",
           "tags": {
             "CR": 1
           }
         },
         {
           "id": "S2.d",
-          "text": "Calm the team and split the fixing work.",
+          "text": "Calm the team down and split up the fixing work.",
           "tags": {
             "SO": 1
           }
         },
         {
           "id": "S2.e",
-          "text": "Decide what we can drop and still have a good stall.",
+          "text": "Decide what we can drop and still have a great stall.",
           "tags": {
             "EN": 1
           }
@@ -90,7 +90,7 @@
     {
       "id": "S3",
       "type": "choice",
-      "text": "Supplies cost ₹600 more than your budget.",
+      "text": "Supplies cost ₹600 more than your budget. The shopkeeper has heard every excuse already.",
       "options": [
         {
           "id": "S3.a",
@@ -139,7 +139,7 @@
     {
       "id": "S4",
       "type": "choice",
-      "text": "Visitors keep walking away confused.",
+      "text": "Visitors keep walking away from your stall looking confused. One of them took a free sweet first.",
       "options": [
         {
           "id": "S4.a",
@@ -157,7 +157,7 @@
         },
         {
           "id": "S4.c",
-          "text": "Talk to each visitor and explain patiently.",
+          "text": "Talk to each visitor and explain it patiently, again and again.",
           "tags": {
             "SO": 1
           }
@@ -181,7 +181,7 @@
     {
       "id": "S5",
       "type": "choice",
-      "text": "Two teammates disagree about the final design and time is running out.",
+      "text": "Two teammates disagree about the final design. The judges arrive in 20 minutes.",
       "options": [
         {
           "id": "S5.a",
@@ -192,7 +192,7 @@
         },
         {
           "id": "S5.b",
-          "text": "Take a quick vote and move on.",
+          "text": "Take a quick vote and move on. The clock is ticking.",
           "tags": {
             "EN": 1
           }
@@ -235,7 +235,7 @@
     {
       "id": "S6",
       "type": "choice",
-      "text": "The principal asks you to lead one thing next year. You pick...",
+      "text": "The festival was a hit. The principal asks you to lead one thing next year. You pick...",
       "options": [
         {
           "id": "S6.a",

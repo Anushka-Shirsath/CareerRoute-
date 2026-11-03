@@ -5,7 +5,7 @@ import { Shell } from "./shell";
 import { ActionLink, Empty, Loading, PageHeader, Panel } from "./ui";
 import { StatusPage } from "./screens/status";
 import { HomePage } from "./screens/home";
-import { LoginPage, takeLoginFragment } from "./screens/login";
+import { LoginPage } from "./screens/login";
 import { MarksPage, SnapshotPage } from "./screens/results";
 import { ExplorePage, PathwayPage } from "./screens/explore";
 import { CompassPlayPage, CompassReportPage } from "./screens/compass";
@@ -31,18 +31,15 @@ function CompassRedirect() {
 
 // Accounts are a server setting. Guest-only builds keep /login on the demo home.
 function LoginRoute() {
-  // Read and strip any email-link fragment before anything else can fail.
-  const [fragment, setFragment] = useState<string | null>(null);
-  useEffect(() => setFragment(takeLoginFragment()), []);
   const status = useData<AuthStatus>("/auth/status");
-  if (status.loading || fragment === null)
+  if (status.loading)
     return (
       <main className="login-loading" aria-busy="true">
         <Loading lines={4} />
       </main>
     );
   if (status.data?.enabled)
-    return <LoginPage signedIn={status.data.signed_in} fragment={fragment} />;
+    return <LoginPage signedIn={status.data.signed_in} />;
   return <Shell><HomePage /></Shell>;
 }
 

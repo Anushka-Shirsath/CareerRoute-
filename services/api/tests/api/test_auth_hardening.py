@@ -40,6 +40,7 @@ class FakeSupabase:
     unconfirmed = set()
     global_logouts = []
     outage = False
+    signup_needs_email = False
     attempts_seen = []
 
     def __init__(self, **kwargs): pass
@@ -54,6 +55,7 @@ class FakeSupabase:
         cls.recovery_emails, cls.global_logouts, cls.attempts_seen = [], [], []
         cls.unconfirmed = {'pending@example.com'}
         cls.outage = False
+        cls.signup_needs_email = False
 
     @classmethod
     def user_for(cls, headers):
@@ -82,8 +84,17 @@ class FakeSupabase:
         if '/logout?scope=global' in url:
             self.global_logouts.append(self.user_for(headers))
             return FakeResponse(None, 204)
-        if '/signup?' in url:
-            return FakeResponse({'user': {'id': OWNER}})
+        if url.endswith('/signup'):
+            email = json['email'].lower()
+            if email in self.users:
+                return FakeResponse({'error_code': 'user_already_exists'}, 422)
+            owner = '66666666-6666-4666-8666-666666666666'
+            self.users[email] = [owner, json['password']]
+            if self.signup_needs_email:
+                return FakeResponse({'user': {'id': owner}})
+            token = fake_jwt({'sub': owner, 'session_id': 'su-' + str(len(self.tokens)), 'amr': [{'method': 'password'}]})
+            self.tokens[token] = owner
+            return FakeResponse({'access_token': token, 'user': {'id': owner}})
         return FakeResponse({}, 404)
 
     def get(self, url, headers):
@@ -216,31 +227,26 @@ def test_sign_out_everywhere_ends_every_device(auth_app, engine):
         assert phone.post('/api/v1/auth/logout-all').status_code == 401
 
 
-def test_forgot_password_answers_the_same_for_unknown_addresses_and_throttles(auth_app):
+def test_signup_signs_the_new_account_in_without_any_email(auth_app):
     with TestClient(auth_app) as client:
-        known = client.post('/api/v1/auth/password/forgot', json={'email': 'owner@example.com'}).json()['data']
-        unknown = client.post('/api/v1/auth/password/forgot', json={'email': 'nobody@example.com'}).json()['data']
-        assert known == unknown
-        # Supabase throttles a second email to a real address; the reply must not change.
-        again = client.post('/api/v1/auth/password/forgot', json={'email': 'owner@example.com'})
-        assert again.status_code == 200 and again.json()['data'] == known
-        for _ in range(4):
-            assert client.post('/api/v1/auth/password/forgot', json={'email': 'nobody@example.com'}).json()['data'] == known
-
-
-def test_reset_password_ends_old_sessions_and_signs_in(auth_app, engine):
-    with TestClient(auth_app) as old_device, TestClient(auth_app) as client:
-        login(old_device)
-        weak = client.post('/api/v1/auth/password/reset', json={'access_token': RECOVERY, 'password': 'owner2024!!'})
-        assert weak.status_code == 422
-        bad = client.post('/api/v1/auth/password/reset', json={'access_token': 'forged-token-000000000000', 'password': 'silver-maple-orbit'})
-        assert bad.status_code == 401 and 'expired' in bad.json()['error']['message']
-        assert client.post('/api/v1/auth/password/reset', json={'access_token': RECOVERY, 'password': 'silver-maple-orbit'}).status_code == 200
+        created = client.post('/api/v1/auth/signup', json={'email': 'fresh@example.com', 'password': 'silver-maple-orbit'})
+        assert created.status_code == 200 and created.json()['data'] == {'signed_in': True}
         assert client.get('/api/v1/auth/status').json()['data']['signed_in'] is True
-        assert old_device.get('/api/v1/auth/status').json()['data']['signed_in'] is False
-        assert session_count(engine) == 1
-        assert login(client, password='old-garden-lantern').status_code == 401
-        assert login(client, password='silver-maple-orbit').status_code == 200
+        assert FakeSupabase.recovery_emails == []
+
+
+def test_signup_with_a_taken_address_says_so(auth_app):
+    with TestClient(auth_app) as client:
+        taken = client.post('/api/v1/auth/signup', json={'email': 'owner@example.com', 'password': 'silver-maple-orbit'})
+        assert taken.status_code == 409 and 'already exists' in taken.json()['error']['message']
+
+
+def test_signup_reports_an_outage_if_supabase_still_wants_an_email(auth_app):
+    FakeSupabase.signup_needs_email = True
+    with TestClient(auth_app) as client:
+        response = client.post('/api/v1/auth/signup', json={'email': 'fresh@example.com', 'password': 'silver-maple-orbit'})
+        assert response.status_code == 503
+        assert client.get('/api/v1/auth/status').json()['data']['signed_in'] is False
 
 
 def test_change_password_needs_the_current_password_of_this_account(auth_app, engine):
@@ -264,27 +270,7 @@ def test_new_endpoints_are_hidden_in_demo_mode(engine):
     app = create_app(Settings(share_token_pepper='test-secret-for-tests-only-at-least-32', auth_enabled=False), engine)
     with TestClient(app) as client:
         assert client.post('/api/v1/auth/password/forgot', json={'email': 'owner@example.com'}).status_code == 404
-        assert client.post('/api/v1/auth/password/reset', json={'access_token': RECOVERY, 'password': 'silver-maple-orbit'}).status_code == 404
         assert client.post('/api/v1/auth/logout-all').status_code == 404
-
-
-def test_reset_link_works_once_and_ends_supabase_sessions(auth_app):
-    with TestClient(auth_app) as client:
-        assert client.post('/api/v1/auth/password/reset', json={'access_token': RECOVERY, 'password': 'silver-maple-orbit'}).status_code == 200
-        assert FakeSupabase.global_logouts == [OWNER]
-        again = client.post('/api/v1/auth/password/reset', json={'access_token': RECOVERY, 'password': 'another-calm-meadow'})
-        assert again.status_code == 401 and 'expired or was already used' in again.json()['error']['message']
-        assert FakeSupabase.users['owner@example.com'][1] == 'silver-maple-orbit'
-
-
-def test_reset_refuses_tokens_that_did_not_come_from_a_recovery_email(auth_app):
-    with TestClient(auth_app) as client:
-        # A normal sign-in token for the same user is valid with Supabase, but is not a reset link.
-        login(client)
-        password_token = next(token for token, owner in FakeSupabase.tokens.items() if owner == OWNER and token != RECOVERY)
-        refused = client.post('/api/v1/auth/password/reset', json={'access_token': password_token, 'password': 'silver-maple-orbit'})
-        assert refused.status_code == 401
-        assert FakeSupabase.users['owner@example.com'][1] == 'old-garden-lantern'
 
 
 def test_attempts_are_counted_before_supabase_is_asked(auth_app, engine):

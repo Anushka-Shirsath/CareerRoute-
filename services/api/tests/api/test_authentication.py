@@ -24,8 +24,8 @@ class FakeAuth:
     def __enter__(self): return self
     def __exit__(self, *args): pass
     def post(self, url, headers, json):
-        if '/signup?' in url:
-            return FakeResponse({'user': {'id': FIRST}})  # confirmation pending
+        if url.endswith('/signup'):
+            return FakeResponse({'access_token': 'first', 'user': {'id': FIRST}})  # no confirmation email
         if json['password'] != 'correct-password':
             return FakeResponse({}, 400)
         return FakeResponse({'access_token': 'first' if json['email'].startswith('first@') else 'second'})
@@ -62,14 +62,14 @@ def test_signin_isolation_logout_and_persistent_account_data(engine, monkeypatch
             assert db.scalar(select(Record).where(Record.user_id == FIRST, Record.kind == 'profile')) is not None
 
 
-def test_signup_needs_confirmation_and_does_not_create_session(engine, monkeypatch):
+def test_signup_signs_in_straight_away(engine, monkeypatch):
     monkeypatch.setattr('app.main.httpx.Client', FakeAuth)
     app = create_app(Settings(share_token_pepper='test-secret-for-tests-only-at-least-32', supabase_url='https://test.supabase.co', supabase_publishable_key='test-key', cookie_secure=False, auth_enabled=True), engine)
     with TestClient(app) as client:
         result = client.post('/api/v1/auth/signup', json={'email': 'first@example.com', 'password': 'correct-password'})
         assert result.status_code == 200
-        assert result.json()['data']['signed_in'] is False
-        assert 'cq_account' not in client.cookies
+        assert result.json()['data']['signed_in'] is True
+        assert 'cq_account' in client.cookies
 
 
 def test_demo_mode_disables_account_signin(engine):

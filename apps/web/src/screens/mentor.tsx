@@ -1,13 +1,12 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { api, write, errorText } from "../api";
 import { useData, useTask, useWorkspace } from "../context";
 import { pretty, route } from "../content";
 import {
   ActionLink,
   Button,
-  CheckField,
   ErrorState,
   Icon,
   Loading,
@@ -78,12 +77,12 @@ function Proposal({
 export function MentorPage() {
   const ws = useWorkspace(),
     task = useTask(),
-    pagePath = usePathname();
+    pagePath = usePathname(),
+    params = useSearchParams();
   const history = useData<Page<ChatMessage>>("/mentor/messages?limit=30");
   const [messages, setMessages] = useState<ChatMessage[]>([]),
-    [input, setInput] = useState(""),
+    [input, setInput] = useState(() => params.get("q")?.slice(0, 1000) || ""),
     [sending, setSending] = useState(false),
-    [providerConsent, setProviderConsent] = useState(false),
     [error, setError] = useState(""),
     [accepted, setAccepted] = useState<string[]>([]);
   const initialized = useRef(false),
@@ -106,10 +105,6 @@ export function MentorPage() {
   }, [messages, sending]);
   const ask = async (question: string, proposalId?: string) => {
     if (!question.trim() || sending) return;
-    if (!proposalId && !providerConsent) {
-      setError("Please choose whether to share your information with Groq before sending.");
-      return;
-    }
     setSending(true);
     setError("");
     setInput("");
@@ -121,13 +116,13 @@ export function MentorPage() {
         sources: string[];
         source_links?: string[];
         actions?: ChatMessage["actions"];
+        follow_ups?: string[];
         memory_suggestions: ChatMessage["memory_suggestions"];
         pending_preference_change: ChatMessage["pending_preference_change"];
       }>("/mentor/chat", {
         message: question.trim(),
         locale: ws.locale,
         page_path: pagePath,
-        provider_consent: providerConsent,
         ...(proposalId ? { confirm_preference_change_id: proposalId } : {}),
       });
       setMessages((old) => [
@@ -147,9 +142,10 @@ export function MentorPage() {
     }
   };
   const prompts = [
-    "What do my confirmed marks tell me?",
+    "Which careers suit what I enjoy?",
+    "Science, Commerce, Arts or Polytechnic: how do I choose?",
+    "Which colleges fit my marks?",
     "What should I check before choosing a Polytechnic?",
-    "What is still unknown about my saved colleges?",
   ];
   const goal = route(ws.dashboard!.profile.active_goal_pathway);
   return (
@@ -239,6 +235,19 @@ export function MentorPage() {
                       ))}
                     </div>
                   )}
+                  {i === messages.length - 1 &&
+                    !sending &&
+                    message.follow_ups &&
+                    message.follow_ups.length > 0 && (
+                      <div className="prompt-buttons chat-followups">
+                        {message.follow_ups.map((q) => (
+                          <button key={q} onClick={() => ask(q)}>
+                            <span>{q}</span>
+                            <Icon name="up" size={15} />
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   {message.pending_preference_change &&
                     !accepted.includes(
                       message.pending_preference_change.proposal_id,
@@ -301,12 +310,6 @@ export function MentorPage() {
               ask(input);
             }}
           >
-            <CheckField
-              label="I agree to share this conversation with Groq"
-              description="Your message, recent chat and relevant saved details, including draft and confirmed marks, may be sent to Groq. You can uncheck this at any time."
-              checked={providerConsent}
-              onChange={setProviderConsent}
-            />
             <div className="composer-field">
               <textarea
                 ref={inputRef}
@@ -326,7 +329,7 @@ export function MentorPage() {
               <button
                 type="submit"
                 aria-label="Send mentor message"
-                disabled={sending || !input.trim() || !providerConsent}
+                disabled={sending || !input.trim()}
               >
                 <Icon
                   name={sending ? "loading" : "send"}
@@ -336,7 +339,7 @@ export function MentorPage() {
               </button>
             </div>
             <div className="composer-foot">
-              <span>Review the sources before making a decision.</span>
+              <span>Answers come from an AI model hosted by Groq. Review the sources before deciding.</span>
               <span className="num">{input.length} / 1,000</span>
             </div>
           </form>

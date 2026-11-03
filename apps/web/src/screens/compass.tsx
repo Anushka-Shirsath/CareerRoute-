@@ -18,7 +18,7 @@ import {
   Tag,
 } from "../ui";
 import type { Compass, GameSession, GameNode } from "../types";
-import { FestivalHunt } from "./festival-hunt";
+import { CareerQuest } from "./career-quest";
 import { Bolt, intros, reactionFor, roles, scenes, type Dimension } from "./compass-fun";
 
 const sequence = [
@@ -61,7 +61,7 @@ export function CompassPlayPage() {
     params = useSearchParams(),
     task = useTask();
   const [session, setSession] = useState<GameSession | null>(null),
-    [showHunt, setShowHunt] = useState(true),
+    [showQuest, setShowQuest] = useState(true),
     [options, setOptions] = useState<string[]>([]),
     [rating, setRating] = useState<number | null>(null),
     [taskChoice, setTaskChoice] = useState(""),
@@ -202,7 +202,7 @@ export function CompassPlayPage() {
       : node
         ? intros[node.id] || ""
         : "";
-  if (showHunt) return <FestivalHunt onContinue={() => setShowHunt(false)} />;
+  if (showQuest) return <CareerQuest onContinue={() => setShowQuest(false)} />;
   return (
     <>
       <PageHeader
@@ -553,7 +553,7 @@ export function CompassReportPage() {
             action={
               <div className="actions">
                 <ActionLink href="/compass/play" variant="primary">
-                  Try the festival mission
+                  Play Career Quest
                 </ActionLink>
                 <Button
                   variant="text"
@@ -565,8 +565,8 @@ export function CompassReportPage() {
               </div>
             }
           >
-            A short school-festival mission helps you notice what you enjoy. You
-            can skip it and explore every route anyway.
+            A quick question game and a short story mission help you notice
+            what you enjoy. You can skip them and explore every route anyway.
           </Empty>
         </Panel>
       ) : (

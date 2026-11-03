@@ -8893,11 +8893,6 @@
             "minLength": 1,
             "title": "Message"
           },
-          "provider_consent": {
-            "type": "boolean",
-            "title": "Provider Consent",
-            "default": false
-          },
           "locale": {
             "anyOf": [
               {
@@ -8977,6 +8972,25 @@
           "fallback": {
             "type": "boolean",
             "title": "Fallback"
+          },
+          "actions": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Actions",
+            "default": []
+          },
+          "follow_ups": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Follow Ups",
+            "default": []
           }
         },
         "additionalProperties": true,

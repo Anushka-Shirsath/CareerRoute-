@@ -884,7 +884,7 @@ def create_app(settings=None, engine=None):
     @app.post(PREFIX + '/mentor/chat', response_model=Envelope[MentorReply], tags=['Mentor'])
     def mentor(value: MentorInput, request: Request, student: StudentDep):
         consume(student.db, student.ws.user_id, 'mentor', 15)
-        result = chat(student, settings, value.message, value.locale or student.profile().get('locale', 'en'), value.confirm_preference_change_id, value.page_path, value.provider_consent)
+        result = chat(student, settings, value.message, value.locale or student.profile().get('locale', 'en'), value.confirm_preference_change_id, value.page_path)
         # A modest explicit-interest suggestion. It is never active memory until
         # the student accepts it, and inferences are not injected into the model.
         interest = re.fullmatch(r'I (?:enjoy|like|love) ([A-Za-z ,&-]{2,100})[.!]?', value.message, re.I)
@@ -906,7 +906,7 @@ def create_app(settings=None, engine=None):
                 raise Problem('VALIDATION_FAILED', 'Invalid pagination cursor.')
             rows = rows[:positions[0]]
         selected = rows[-limit:]
-        return envelope(request, {'items': [{'id': row.id, 'role': row.data['role'], 'content': row.data['content'], 'created_at': row.created_at, 'sources': row.data.get('sources', []), 'source_links': row.data.get('source_links', [])} for row in selected], 'next_cursor': selected[0].id if len(rows) > limit else None})
+        return envelope(request, {'items': [{'id': row.id, 'role': row.data['role'], 'content': row.data['content'], 'created_at': row.created_at, 'sources': row.data.get('sources', []), 'source_links': row.data.get('source_links', []), 'actions': row.data.get('actions', [])} for row in selected], 'next_cursor': selected[0].id if len(rows) > limit else None})
 
     @app.delete(PREFIX + '/me/memory', response_model=Envelope, tags=['Mentor'])
     def clear_memory(request: Request, student: StudentDep):

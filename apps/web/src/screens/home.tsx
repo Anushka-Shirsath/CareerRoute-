@@ -111,7 +111,7 @@ export function HomePage() {
             <circle cx="40" cy="40" r="3" className="compass-motif-hub" />
           </svg>
           <p>
-            Build a school festival. Make a few choices. Notice what you enjoy.
+            Play a 12-round career quiz. Bust myths. Find careers that fit you.
           </p>
           <ActionLink
             href={d.compass_summary ? "/compass/report" : "/compass/play"}

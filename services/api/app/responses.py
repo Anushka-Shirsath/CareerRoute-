@@ -164,3 +164,5 @@ class MentorReply(Output):
     sources: list[str]
     memory_suggestions: list[dict[str, Any]]
     fallback: bool
+    actions: list[dict[str, str]] = []
+    follow_ups: list[str] = []

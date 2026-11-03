@@ -9,6 +9,16 @@ from ..errors import Problem
 from .guard import sanitize
 from sqlalchemy import text
 from .. import master_catalogue, recommend
+from . import careers
+
+# In-app pages the mentor may point to. Labels are fixed here so the model only picks a destination.
+NEXT_STEP_LINKS = {
+    '/finder': 'Find colleges for my marks', '/shortlist': 'Open my shortlist', '/compare': 'Compare costs',
+    '/compass/play': 'Play the career quest', '/compass/report': 'See my Compass report', '/explore': 'Explore routes after 10th',
+    '/explore/fyjc_science': 'Science route', '/explore/fyjc_commerce': 'Commerce route', '/explore/fyjc_arts': 'Arts route',
+    '/explore/polytechnic_diploma': 'Polytechnic diploma route', '/explore/iti_trade': 'ITI trade route', '/explore/vocational': 'Vocational route',
+    '/start': 'Enter my marks', '/dashboard': 'My journey dashboard',
+}
 
 TOOL_PARAMETERS = {
     'get_my_academic_summary': {}, 'get_my_result_context': {}, 'get_my_compass_report': {}, 'get_my_preferences': {}, 'get_my_shortlist': {}, 'get_my_last_search': {},
@@ -18,6 +28,8 @@ TOOL_PARAMETERS = {
     'list_database_tables': {},
     'query_database': {'sql': {'type': 'string', 'maxLength': 4000}},
     'get_admission_guide': {'pathway_id': {'type': 'string'}},
+    'explore_careers': {'interests': {'type': 'array', 'items': {'type': 'string', 'enum': list(careers.INTERESTS)}, 'maxItems': 3}, 'query': {'type': 'string', 'maxLength': 120}, 'route': {'type': 'string', 'enum': ['fyjc_science', 'fyjc_commerce', 'fyjc_arts', 'polytechnic_diploma', 'iti_trade', 'vocational']}},
+    'suggest_next_steps': {'links': {'type': 'array', 'items': {'type': 'string', 'enum': list(NEXT_STEP_LINKS)}, 'maxItems': 3}, 'follow_up_questions': {'type': 'array', 'items': {'type': 'string', 'maxLength': 90}, 'maxItems': 3}},
     'save_my_preference': {'field': {'type': 'string', 'enum': ['target_districts', 'tuition_cap_inr', 'government', 'hostel', 'medium', 'active_goal_pathway']}, 'value': {}, 'student_confirmed': {'type': 'boolean'}},
 }
 DESCRIPTIONS = {'get_my_academic_summary': 'Confirmed marks only, never drafts.', 'get_my_compass_report': 'Exploratory route report; readiness is separate.', 'get_my_preferences': 'Saved budget, districts, importance weights and goal.', 'get_my_shortlist': 'Saved offerings and student-reported statuses.', 'search_colleges': 'Up to five example colleges for a pathway and district. Not for counting.', 'get_offering_facts': 'Published source facts for one offering.', 'get_admission_guide': 'Official portal and preparation steps; dates may be unverified.'}
@@ -26,6 +38,8 @@ DESCRIPTIONS['list_database_tables'] = 'Main college database tables and columns
 DESCRIPTIONS['query_database'] = 'One read-only SELECT over the college database; at most 10 rows. For counts, fees, intake, hostels, scholarships or comparisons.'
 DESCRIPTIONS['get_my_result_context'] = 'Confirmed academic summary and the latest unconfirmed draft marks, clearly labelled as draft. Never treat draft marks as confirmed.'
 DESCRIPTIONS['get_my_last_search'] = 'The student’s last saved finder search, including its selected preferences and result identifiers.'
+DESCRIPTIONS['explore_careers'] = 'Careers matching interest codes (AN analytical, PM practical making, CR creative, EN enterprise, SO social), a free-text query such as "drawing" or "doctor", and/or a route. Returns what the work is, the study path after 10th, entrance exams and school subjects.'
+DESCRIPTIONS['suggest_next_steps'] = 'Offer the student up to three in-app pages and up to three short follow-up questions they might ask next. Call it once, just before your final answer.'
 DESCRIPTIONS['save_my_preference'] = 'Propose one preference change. The server returns a confirmation proposal; the application must send its ID on the next student-confirmed request before any setting changes. Model confirmation flags alone never authorize writes.'
 TOOLS = [{'type': 'function', 'function': {'name': name, 'description': DESCRIPTIONS[name], 'parameters': {'type': 'object', 'properties': props, 'additionalProperties': False, 'required': list(props) if name in {'get_offering_facts', 'get_admission_guide', 'save_my_preference', 'query_database'} else []}}} for name, props in TOOL_PARAMETERS.items()]
 
@@ -134,6 +148,12 @@ class Tools:
             output = read_only_query(student.db, arguments['sql'])
         elif name == 'get_admission_guide':
             output = guide(arguments['pathway_id'])
+        elif name == 'explore_careers':
+            output = careers.explore(arguments.get('interests'), arguments.get('query'), arguments.get('route'))
+        elif name == 'suggest_next_steps':
+            links = [href for href in dict.fromkeys(arguments.get('links') or []) if href in NEXT_STEP_LINKS][:3]
+            questions = [q.strip()[:90] for q in arguments.get('follow_up_questions') or [] if isinstance(q, str) and q.strip()][:3]
+            output = {'status': 'offered', 'actions': [{'label': NEXT_STEP_LINKS[href], 'href': href} for href in links], 'follow_ups': questions}
         else:
             field, value = arguments['field'], arguments['value']
             if field not in TOOL_PARAMETERS['save_my_preference']['field']['enum']:

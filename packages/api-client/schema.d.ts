@@ -1366,11 +1366,6 @@ export interface components {
         MentorInput: {
             /** Message */
             message: string;
-            /**
-             * Provider Consent
-             * @default false
-             */
-            provider_consent: boolean;
             /** Locale */
             locale?: ("en" | "mr" | "hi") | null;
             /** Page Path */
@@ -1392,6 +1387,18 @@ export interface components {
             }[];
             /** Fallback */
             fallback: boolean;
+            /**
+             * Actions
+             * @default []
+             */
+            actions: {
+                [key: string]: string;
+            }[];
+            /**
+             * Follow Ups
+             * @default []
+             */
+            follow_ups: string[];
         } & {
             [key: string]: unknown;
         };

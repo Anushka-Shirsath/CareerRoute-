@@ -677,8 +677,8 @@ export function SnapshotPage() {
         </Panel>
         <Panel className="span-6" title="Add another part of the picture">
           <p className="muted">
-            Your interests deserve a say too. Try an optional school-festival
-            mission, or compare your marks with historical college cutoffs.
+            Your interests deserve a say too. Play the optional Career Quest
+            quiz, or compare your marks with historical college cutoffs.
           </p>
           <div className="actions section-gap">
             <ActionLink href="/compass/play" variant="primary">

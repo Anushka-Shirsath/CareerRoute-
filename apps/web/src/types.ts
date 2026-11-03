@@ -124,6 +124,7 @@ export type ChatMessage = {
   sources?: string[];
   source_links?: string[];
   actions?: { label: string; href: string }[];
+  follow_ups?: string[];
   memory_suggestions?: {
     suggestion_id: string;
     content: string;

@@ -609,11 +609,12 @@ export function PrivacyPage() {
         <section>
           <h2>The mentor has boundaries</h2>
           <p>
-            If you choose to use the Groq-powered mentor and check the consent
-            box, your message, recent conversation and relevant saved details,
-            including draft and confirmed marks, may be sent to Groq. You can
-            uncheck the box to stop further messages. Your optional comparison
-            category is excluded. Preference changes require your confirmation.
+            The mentor runs on an AI model hosted by Groq. When you send a
+            message, it, your recent conversation and relevant saved details,
+            including draft and confirmed marks, are sent to Groq to write the
+            answer. Turn off chat history to stop saving conversations. Your
+            optional comparison category is excluded. Preference changes
+            require your confirmation.
           </p>
         </section>
         <section>

@@ -2,8 +2,6 @@ from unittest.mock import MagicMock, patch
 import httpx
 from app.ai.mentor import chat
 from app.config import Settings
-from app.errors import Problem
-import pytest
 
 
 def completion(message):
@@ -22,10 +20,20 @@ def test_fallback_on_timeout(client):
         student = Student(Workspace(db, owner))
         with patch('app.ai.mentor.httpx.Client') as factory:
             factory.return_value.__enter__.return_value.post.side_effect = httpx.ReadTimeout('timeout')
-            assert chat(student, Settings(groq_api_key='test-value'), 'Hello', 'en', provider_consent=True)['fallback']
+            assert chat(student, Settings(groq_api_key='test-value'), 'Hello', 'en')['fallback']
 
 
-def test_provider_receives_no_context_without_explicit_consent(client, confirmed):
+def test_mentor_answers_without_a_consent_step(client, confirmed):
+    client.app.state.settings.mentor_enabled = True
+    client.app.state.settings.groq_api_key = 'test-value'
+    with patch('app.ai.mentor.httpx.Client') as factory:
+        factory.return_value.__enter__.return_value.post.return_value = completion({'content': 'Consider your options carefully.'})
+        response = client.post('/api/v1/mentor/chat', json={'message': 'What can I consider?'})
+        assert response.status_code == 200
+        assert factory.call_count == 1
+
+
+def test_mentor_explores_careers_and_offers_next_steps(client, confirmed):
     from app.db import Workspace, transaction
     from app.models import GuestSession
     from sqlalchemy import select
@@ -33,35 +41,16 @@ def test_provider_receives_no_context_without_explicit_consent(client, confirmed
     with transaction(client.app.state.engine) as db:
         student = Student(Workspace(db, db.scalar(select(GuestSession.user_id))))
         with patch('app.ai.mentor.httpx.Client') as factory:
-            factory.side_effect = AssertionError('Unexpected external request')
-            with pytest.raises(Problem, match='consent'):
-                chat(student, Settings(groq_api_key='test-value', mentor_enabled=True), 'What are my marks?', 'en')
-            factory.assert_not_called()
-
-
-def test_mentor_api_requires_unambiguous_consent(client, confirmed):
-    client.app.state.settings.mentor_enabled = True
-    client.app.state.settings.groq_api_key = 'test-value'
-    with patch('app.ai.mentor.httpx.Client') as factory:
-        factory.side_effect = AssertionError('Unexpected external request')
-        for payload in ({'message': 'What are my marks?'},
-                        {'message': 'What are my marks?', 'provider_consent': False},
-                        {'message': 'What are my marks?', 'provider_consent': 'true'}):
-            assert client.post('/api/v1/mentor/chat', json=payload).status_code == 422
-        factory.assert_not_called()
-
-
-def test_consent_can_be_revoked_on_the_next_message(client, confirmed):
-    client.app.state.settings.mentor_enabled = True
-    client.app.state.settings.groq_api_key = 'test-value'
-    with patch('app.ai.mentor.httpx.Client') as factory:
-        factory.return_value.__enter__.return_value.post.return_value = completion({'content': 'Consider your options carefully.'})
-        first = client.post('/api/v1/mentor/chat', json={'message': 'What can I consider?', 'provider_consent': True})
-        assert first.status_code == 200
-        assert factory.call_count == 1
-        second = client.post('/api/v1/mentor/chat', json={'message': 'What about now?', 'provider_consent': False})
-        assert second.status_code == 422
-        assert factory.call_count == 1
+            adapter = factory.return_value.__enter__.return_value
+            adapter.post.side_effect = [
+                completion({'content': None, 'tool_calls': [{'id': 'c1', 'type': 'function', 'function': {'name': 'explore_careers', 'arguments': '{"interests": ["CR"], "query": "drawing"}'}}]}),
+                completion({'content': None, 'tool_calls': [{'id': 'c2', 'type': 'function', 'function': {'name': 'suggest_next_steps', 'arguments': '{"links": ["/explore/fyjc_arts", "/not-a-page"], "follow_up_questions": ["What does an architect study?"]}'}}]}),
+                completion({'content': 'If you love drawing, look at Architect or Graphic or UI designer. Both start after 10th.'}),
+            ]
+            result = chat(student, Settings(groq_api_key='test-value'), 'I like drawing. Which careers suit me?', 'en')
+    assert result['used_tools'] == ['explore_careers', 'suggest_next_steps']
+    assert result['actions'] == [{'label': 'Arts route', 'href': '/explore/fyjc_arts'}]
+    assert result['follow_ups'] == ['What does an architect study?']
 
 
 def test_tool_grounded_turn(client, confirmed):
@@ -75,7 +64,7 @@ def test_tool_grounded_turn(client, confirmed):
         with patch('app.ai.mentor.httpx.Client') as factory:
             adapter = factory.return_value.__enter__.return_value
             adapter.post.side_effect = [completion({'content': None, 'tool_calls': [{'id': 'call1', 'type': 'function', 'function': {'name': 'get_my_academic_summary', 'arguments': '{}'}}]}), completion({'content': 'Your Mathematics mark is 88 out of 100. You can explore any route.'})]
-            result = chat(student, Settings(groq_api_key='test-value'), 'What are my marks?', 'en', provider_consent=True)
+            result = chat(student, Settings(groq_api_key='test-value'), 'What are my marks?', 'en')
             assert not result['fallback'] and result['used_tools'] == ['get_my_academic_summary']
             assert '88' in result['reply']
 

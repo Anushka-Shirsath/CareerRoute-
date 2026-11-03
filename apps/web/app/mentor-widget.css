@@ -17,7 +17,6 @@
 .mentor-widget-message button { margin-top: 8px; }
 .mentor-widget-status, .mentor-widget-error { font-size: 13px; color: #4d5863; }
 .mentor-widget-error { color: #a02338; }
-.mentor-widget-consent { padding: 0 14px; }
 .mentor-widget-form { display: flex; gap: 8px; padding: 10px 14px; border-top: 1px solid #e8eaed; }
 .mentor-widget-form textarea { resize: none; flex: 1; min-width: 0; border: 1px solid #d5dce0; border-radius: 10px; padding: 10px; font: inherit; font-size: 14px; }
 .mentor-widget-form button { width: 42px; border: 0; border-radius: 10px; background: #20242c; color: white; display: grid; place-items: center; cursor: pointer; }
@@ -26,3 +25,11 @@
 .mentor-widget-footer a { white-space: nowrap; font-weight: 700; color: #254aa9; }
 @media(max-width: 600px) { .mentor-widget { right: 12px; bottom: 12px; } .with-comparison .mentor-widget { bottom: 125px; } .mentor-widget-panel { height: min(530px, calc(100dvh - 180px)); } }
 @media print { .mentor-widget { display: none; } }
+
+.mentor-widget-welcome button { display: block; width: 100%; margin-top: 8px; }
+.mentor-widget-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; white-space: normal; }
+.mentor-widget-message .mentor-widget-actions a { margin: 0; padding: 6px 11px; border-radius: 999px; background: #fff; color: #1b6e66; font-weight: 700; text-decoration: none; font-size: 12px; }
+.mentor-widget-message .mentor-widget-actions a:hover { background: #e9f2ed; }
+.mentor-widget-followups { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; white-space: normal; }
+.mentor-widget-message .mentor-widget-followups button { margin: 0; border: 1px solid #cbd1c8; background: #fff; font-weight: 600; }
+.mentor-widget-message .mentor-widget-followups button:hover { border-color: #1b6e66; }

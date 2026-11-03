@@ -4,6 +4,7 @@ import "./astryx-inspired.css";
 import "./bright-dashboard.css";
 import "./mentor-widget.css";
 import "./festival-game.css";
+import "./career-quest.css";
 import "./college-search.css";
 import "./college-details.css";
 import "./shortlist.css";

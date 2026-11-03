@@ -9,8 +9,8 @@ from .tools import TOOLS, Tools, apply_confirmed_change
 from urllib.parse import unquote, urlparse
 
 logger = logging.getLogger('careerquest.mentor')
-# Enough steps to look up tables, query them and follow up on one college.
-MAX_TOOL_CALLS = 8
+# Enough steps to look up tables, query them, follow up on one college and offer next steps.
+MAX_TOOL_CALLS = 10
 PERCENT = re.compile(r'(\d{1,2}(?:\.\d{1,2})?|100)\s*(?:%|percent|percentage)', re.I)
 
 FALLBACK = {'en': 'The mentor is resting right now. You can still explore your matches, compare your shortlist, and check official admission steps.', 'mr': 'मार्गदर्शक सध्या उपलब्ध नाही. तुम्ही महाविद्यालये पाहू शकता, तुमची यादी तुलना करू शकता आणि अधिकृत प्रवेश प्रक्रिया तपासू शकता.', 'hi': 'मार्गदर्शक अभी उपलब्ध नहीं है। आप कॉलेज देख सकते हैं, अपनी सूची की तुलना कर सकते हैं और आधिकारिक प्रवेश प्रक्रिया देख सकते हैं।'}
@@ -29,7 +29,7 @@ def fixed_reply(message, locale):
     return None
 
 
-def chat(student, settings, message, locale, confirmed_change_id=None, page_path=None, provider_consent=False):
+def chat(student, settings, message, locale, confirmed_change_id=None, page_path=None):
     if confirmed_change_id:
         change = apply_confirmed_change(student, confirmed_change_id)
         reply = {'en': 'Your confirmed preference has been saved. You can review your updated matches.', 'mr': 'तुमची पुष्टी केलेली पसंती जतन केली आहे. अद्ययावत महाविद्यालये पाहू शकता.', 'hi': 'आपकी पुष्टि की हुई पसंद सेव हो गई है। अब अद्यतन कॉलेज सूची देख सकते हैं।'}[locale]
@@ -39,14 +39,12 @@ def chat(student, settings, message, locale, confirmed_change_id=None, page_path
         return {'reply': refusal, 'used_tools': [], 'sources': [], 'memory_suggestions': [], 'fallback': False}
     if not settings.mentor_enabled or not settings.groq_api_key:
         return fallback(locale)
-    if provider_consent is not True:
-        from ..errors import Problem
-        raise Problem('CONSENT_REQUIRED', 'Please give consent before sending your message and saved context to Groq.', 422)
     prompt = (Path(__file__).parent / 'prompts/mentor_system.md').read_text(encoding='utf-8')
     messages = [{'role': 'system', 'content': prompt + '\nRequested locale: ' + locale}]
     if student.profile().get('chat_history_enabled', True):
-        # Short history keeps requests inside the provider's free per-minute token budget.
-        for row in student.ws.list('mentor_message')[-2:]:
+        # Three recent turns let follow-ups like "and the second one?" resolve, while
+        # truncation keeps requests inside the provider's free per-minute token budget.
+        for row in student.ws.list('mentor_message')[-6:]:
             messages.append({'role': row.data['role'], 'content': row.data['content'][:400]})
     memories = [r.data for r in student.ws.list('memory') if r.data.get('kind') in {'confirmed_fact', 'preference'} or (r.data.get('kind') == 'inference' and r.data.get('student_allowed') is True)]
     if memories:
@@ -170,10 +168,11 @@ def chat(student, settings, message, locale, confirmed_change_id=None, page_path
                             collect(item)
                 collect(outputs)
                 proposals = [o for o in outputs if isinstance(o, dict) and o.get('status') == 'confirmation_required']
+                offered = next((o for o in reversed(outputs) if isinstance(o, dict) and o.get('status') == 'offered'), {})
                 if student.profile().get('chat_history_enabled', True):
                     student.ws.put('mentor_message', {'role': 'user', 'content': message})
-                    student.ws.put('mentor_message', {'role': 'assistant', 'content': reply, 'tool_refs': used, 'sources': sources, 'source_links': source_links[:8]})
-                return {'reply': reply, 'used_tools': used, 'sources': sources, 'source_links': source_links[:8], 'memory_suggestions': [], 'fallback': False, 'pending_preference_change': proposals[-1] if proposals else None}
+                    student.ws.put('mentor_message', {'role': 'assistant', 'content': reply, 'tool_refs': used, 'sources': sources, 'source_links': source_links[:8], 'actions': offered.get('actions', [])})
+                return {'reply': reply, 'used_tools': used, 'sources': sources, 'source_links': source_links[:8], 'memory_suggestions': [], 'fallback': False, 'pending_preference_change': proposals[-1] if proposals else None, 'actions': offered.get('actions', []), 'follow_ups': offered.get('follow_ups', [])}
     except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
         if isinstance(exc, httpx.HTTPStatusError):
             try:

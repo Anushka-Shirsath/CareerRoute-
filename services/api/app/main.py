@@ -11,7 +11,6 @@ import secrets
 import time
 import uuid
 from typing import Annotated, Any, Literal
-from urllib.parse import quote
 import httpx
 from fastapi import Depends, FastAPI, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
@@ -76,16 +75,6 @@ class NewAccountCredentials(AccountCredentials):
     def strong_password(self):
         checked_password(self.password, self.email)
         return self
-
-
-class PasswordRecovery(BaseModel):
-    email: Email
-
-
-class PasswordReset(BaseModel):
-    # The one-time recovery token Supabase put in the emailed link's fragment.
-    access_token: str = Field(min_length=20, max_length=4096)
-    password: str = Field(min_length=8, max_length=128)
 
 
 class PasswordChange(BaseModel):
@@ -327,8 +316,7 @@ def create_app(settings=None, engine=None):
             raise Problem('FORBIDDEN', 'Demo fixture loading is disabled.', 403)
         return envelope(request, student.demo())
 
-    SIGN_IN_FAILED = 'Could not sign in. Check your details or confirm your email and try again.'
-    LINK_EXPIRED = 'This reset link has expired or was already used. Ask for a new one.'
+    SIGN_IN_FAILED = 'Could not sign in. Check your email and password and try again.'
 
     def auth_provider(path, payload=None, access_token=None, method=None, failure=SIGN_IN_FAILED):
         if not settings.supabase_url.startswith('https://') or not settings.supabase_publishable_key:
@@ -357,15 +345,15 @@ def create_app(settings=None, engine=None):
                 code = result.json().get('error_code') or result.json().get('code')
             except (ValueError, AttributeError):
                 code = None
-            if code == 'email_address_not_authorized':
-                raise Problem('AUTH_EMAIL_UNAVAILABLE', 'This project cannot send email to that address yet. Please ask the site owner to configure email delivery.', 503)
+            if code in ('user_already_exists', 'email_exists'):
+                raise Problem('AUTH_EXISTS', 'An account with this email already exists. Sign in instead.', 409)
             if code == 'weak_password':
                 raise Problem('VALIDATION_FAILED', 'This password is too weak or has appeared in a data breach. Choose another.')
             if code == 'same_password':
                 raise Problem('VALIDATION_FAILED', 'Choose a password different from your current one.')
             if code == 'email_not_confirmed':
                 # Supabase reports this only after the password matched.
-                raise Problem('AUTH_UNCONFIRMED', 'Confirm your email address using the link we sent, then sign in.', 401)
+                raise Problem('AUTH_UNCONFIRMED', 'This account was never activated. Please create a new account.', 401)
             raise Problem('AUTH_FAILED', failure, 401)
         if result.status_code == 204:
             return {}
@@ -493,14 +481,6 @@ def create_app(settings=None, engine=None):
         except Problem:
             logger.warning('Supabase global logout failed after a password update.')
 
-    def token_claims(access_token):
-        # Read only after Supabase has verified this exact token.
-        try:
-            payload = access_token.split('.')[1]
-            return json.loads(base64.urlsafe_b64decode(payload + '=' * (-len(payload) % 4)))
-        except (IndexError, ValueError):
-            return {}
-
     def require_auth_enabled():
         if not settings.auth_enabled:
             raise Problem('NOT_FOUND', 'Account sign-in is disabled in demo mode.', 404)
@@ -509,14 +489,14 @@ def create_app(settings=None, engine=None):
     def sign_up(value: NewAccountCredentials, request: Request, response: Response):
         require_auth_enabled()
         limit_auth(request, 'signup')
-        redirect = settings.public_api_origin.rstrip('/') + '/login'
-        result = auth_provider('signup?redirect_to=' + quote(redirect, safe=''), {'email': value.email, 'password': value.password})
-        audit(request, 'signup', 'requested')
-        if result.get('access_token'):
-            owner, _ = verified_owner(result['access_token'])
-            issue_account_session(request, response, owner)
-            return envelope(request, {'signed_in': True})
-        return envelope(request, {'signed_in': False, 'message': 'If this address can be registered, check your email to confirm your account, then sign in.'})
+        result = auth_provider('signup', {'email': value.email, 'password': value.password})
+        audit(request, 'signup', 'created')
+        if not result.get('access_token'):
+            # Supabase only withholds the session when it wants a confirmation email.
+            raise Problem('AUTH_UNAVAILABLE', 'Sign-up is not available right now. Please try again later.', 503)
+        owner, _ = verified_owner(result['access_token'])
+        issue_account_session(request, response, owner)
+        return envelope(request, {'signed_in': True})
 
     @app.post(PREFIX + '/auth/login', response_model=Envelope, tags=['Authentication'])
     def sign_in(value: AccountCredentials, request: Request, response: Response):
@@ -525,67 +505,6 @@ def create_app(settings=None, engine=None):
         owner, _ = verified_owner(password_grant(request, value.email, value.password))
         issue_account_session(request, response, owner)
         audit(request, 'login', 'succeeded')
-        return envelope(request, {'signed_in': True})
-
-    @app.post(PREFIX + '/auth/password/forgot', response_model=Envelope, tags=['Authentication'])
-    def forgot_password(value: PasswordRecovery, request: Request):
-        require_auth_enabled()
-        limit_auth(request, 'recover')
-        message = {'sent': True, 'message': 'If an account uses this address, a reset link is on its way. It works once and expires soon.'}
-        with transaction(engine) as db:
-            role(db, 'cq_system')
-            try:
-                # A few emails per address per hour; beyond that, answer the same way but send nothing.
-                consume(db, email_key(value.email), 'recover-email', 3, 'hour', 'AUTH_RATE_LIMITED')
-            except Problem:
-                audit(request, 'password_forgot', 'throttled')
-                return envelope(request, message)
-        redirect = settings.public_api_origin.rstrip('/') + '/login'
-        try:
-            auth_provider('recover?redirect_to=' + quote(redirect, safe=''), {'email': value.email})
-        except Problem as problem:
-            # Supabase answers known and unknown addresses differently in some
-            # cases (resend throttles, unauthorised addresses). Only a real outage
-            # is reported; everything else gets the same reply.
-            if problem.code == 'AUTH_UNAVAILABLE':
-                raise
-            audit(request, 'password_forgot', problem.code.lower())
-            return envelope(request, message)
-        audit(request, 'password_forgot', 'requested')
-        return envelope(request, message)
-
-    @app.post(PREFIX + '/auth/password/reset', response_model=Envelope, tags=['Authentication'])
-    def reset_password(value: PasswordReset, request: Request, response: Response):
-        require_auth_enabled()
-        limit_auth(request, 'reset')
-        owner, email = verified_owner(value.access_token, failure=LINK_EXPIRED)
-        claims = token_claims(value.access_token)
-        # Only a token from a password-recovery email may set a password here.
-        if not any(isinstance(m, dict) and m.get('method') == 'recovery' for m in claims.get('amr') or []):
-            audit(request, 'password_reset', 'not_recovery_token')
-            raise Problem('AUTH_FAILED', LINK_EXPIRED, 401)
-        problem = password_problem(value.password, email)
-        if problem:
-            raise Problem('VALIDATION_FAILED', problem, fields=[{'path': 'password', 'message': problem}])
-        # Make each link single-use: mark it before the update, atomically.
-        used = hmac.new(settings.share_token_pepper.encode(), str(claims.get('session_id') or value.access_token).encode(), hashlib.sha256).hexdigest()
-        with transaction(engine) as db:
-            role(db, 'cq_system')
-            seen = db.scalar(select(RateCounter.bucket).where(RateCounter.user_id == used, RateCounter.bucket.like('recovery-used:%')).limit(1))
-            try:
-                if seen:
-                    raise Problem('AUTH_FAILED', LINK_EXPIRED, 401)
-                consume(db, used, 'recovery-used', 1, 'day', 'AUTH_FAILED')
-            except Problem:
-                audit(request, 'password_reset', 'link_reused')
-                raise Problem('AUTH_FAILED', LINK_EXPIRED, 401)
-        auth_provider('user', {'password': value.password}, access_token=value.access_token, method='PUT', failure=LINK_EXPIRED)
-        end_provider_sessions(value.access_token)
-        if email:
-            clear_failures(email)
-        # A reset means the old password may be known to someone else: end every session.
-        issue_account_session(request, response, owner, revoke_all=True)
-        audit(request, 'password_reset', 'succeeded')
         return envelope(request, {'signed_in': True})
 
     @app.post(PREFIX + '/auth/password/change', response_model=Envelope, tags=['Authentication'])
@@ -965,7 +884,7 @@ def create_app(settings=None, engine=None):
     @app.post(PREFIX + '/mentor/chat', response_model=Envelope[MentorReply], tags=['Mentor'])
     def mentor(value: MentorInput, request: Request, student: StudentDep):
         consume(student.db, student.ws.user_id, 'mentor', 15)
-        result = chat(student, settings, value.message, value.locale or student.profile().get('locale', 'en'), value.confirm_preference_change_id, value.page_path, value.provider_consent)
+        result = chat(student, settings, value.message, value.locale or student.profile().get('locale', 'en'), value.confirm_preference_change_id, value.page_path)
         # A modest explicit-interest suggestion. It is never active memory until
         # the student accepts it, and inferences are not injected into the model.
         interest = re.fullmatch(r'I (?:enjoy|like|love) ([A-Za-z ,&-]{2,100})[.!]?', value.message, re.I)
@@ -987,7 +906,7 @@ def create_app(settings=None, engine=None):
                 raise Problem('VALIDATION_FAILED', 'Invalid pagination cursor.')
             rows = rows[:positions[0]]
         selected = rows[-limit:]
-        return envelope(request, {'items': [{'id': row.id, 'role': row.data['role'], 'content': row.data['content'], 'created_at': row.created_at, 'sources': row.data.get('sources', []), 'source_links': row.data.get('source_links', [])} for row in selected], 'next_cursor': selected[0].id if len(rows) > limit else None})
+        return envelope(request, {'items': [{'id': row.id, 'role': row.data['role'], 'content': row.data['content'], 'created_at': row.created_at, 'sources': row.data.get('sources', []), 'source_links': row.data.get('source_links', []), 'actions': row.data.get('actions', [])} for row in selected], 'next_cursor': selected[0].id if len(rows) > limit else None})
 
     @app.delete(PREFIX + '/me/memory', response_model=Envelope, tags=['Mentor'])
     def clear_memory(request: Request, student: StudentDep):
